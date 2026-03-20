@@ -5,6 +5,7 @@ import Button from '../components/Button'
 import '../styles/form.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import { useNavigate } from 'react-router-dom'
 
 const DOC_TYPES = [
@@ -23,6 +24,7 @@ export default function DocumentRequest(){
   const [address, setAddress] = useState('')
   const [errors, setErrors] = useState({})
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [submittedRequest, setSubmittedRequest] = useState(null)
 
   const nav = useNavigate()
 
@@ -80,8 +82,22 @@ export default function DocumentRequest(){
 
     try{
       const res = await submitToApi()
-      if(res.data.success) nav('/document-history')
-      else alert('Error: ' + res.data.message)
+      if(res.data.success) {
+        setSubmittedRequest({
+          type,
+          status: 'Processed by Admin',
+          description: `This certifies that the resident has requested a ${type.toLowerCase()} and it has been approved.`,
+          date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        })
+        setConfirmOpen(false)
+        setName('')
+        setBirthdate('')
+        setAddress('')
+        setPurpose('')
+        setBusinessName('')
+      } else {
+        alert('Error: ' + res.data.message)
+      }
     } catch(err){
       alert('Error submitting request: ' + (err.response?.data?.message || err.message))
     }
@@ -95,6 +111,66 @@ export default function DocumentRequest(){
     e.preventDefault()
     if(!validate()) return
     setConfirmOpen(true)
+  }
+
+  async function handleDownloadLetter(){
+    if(!submittedRequest) return
+
+    const pdfDoc = await PDFDocument.create()
+    const page = pdfDoc.addPage([600, 360])
+    const { width, height } = page.getSize()
+    const normalFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+
+    const textLines = [
+      '---------------------------------',
+      `| ${submittedRequest.type} Request` + ' '.repeat(Math.max(0, 27 - submittedRequest.type.length)) + '|',
+      '---------------------------------',
+      `Status: ${submittedRequest.status}`,
+      '',
+      submittedRequest.type,
+      '',
+      'This certifies that the resident has requested',
+      `a ${submittedRequest.type.toLowerCase()} and it has been approved.`,
+      '',
+      `Date: ${submittedRequest.date}`
+    ]
+
+    const lineHeight = 18
+    let y = height - 40
+
+    page.drawText('Barangay Document Request', {
+      x: 40,
+      y,
+      size: 18,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+
+    y -= 36
+    textLines.forEach(line => {
+      page.drawText(line, {
+        x: 40,
+        y,
+        size: 12,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= lineHeight
+    })
+
+    const pdfBytes = await pdfDoc.save()
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+
+    const fileNameText = submittedRequest.type.replace(/\s+/g, '_').toLowerCase()
+    link.download = `${fileNameText}_request.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -233,13 +309,23 @@ export default function DocumentRequest(){
 
                   <Button
                     onClick={() => {
-                      setConfirmOpen(false)
                       handleSubmit()
                     }}
                   >
                     Yes, Submit
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {submittedRequest && (
+            <div className="form-card" style={{ marginTop: '20px' }}>
+              <h2>Request Submitted:</h2>
+              <div style={{ marginTop: '12px' }}>
+                <Button type="button" onClick={handleDownloadLetter}>
+                  Download Letter
+                </Button>
               </div>
             </div>
           )}

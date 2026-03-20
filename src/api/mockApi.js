@@ -187,15 +187,17 @@ const api = {
 
   updateComplaintStatus(id, status){
     const list = load(KEY_COMPLAINTS)
-    const idx = list.findIndex(
-      item => item.id === id || item.complaint_id === id || item.numericId === id
-    )
+    const idx = list.findIndex(item => {
+      const isEqual = v => v === id || String(v) === String(id)
+      return isEqual(item.id) || isEqual(item.complaint_id) || isEqual(item.numericId)
+    })
 
     if(idx === -1){
       return { success:false, message:'Complaint not found' }
     }
 
     list[idx].status = status
+    list[idx].updated_at = nowIso()
     save(KEY_COMPLAINTS, list)
 
     return { success:true, data:list[idx] }
@@ -250,15 +252,17 @@ const api = {
 
   updateDocStatus(id, status){
     const list = load(KEY_DOCS)
-    const idx = list.findIndex(
-      item => item.id === id || item.request_id === id || item.numericId === id
-    )
+    const idx = list.findIndex(item => {
+      const isEqual = v => v === id || String(v) === String(id)
+      return isEqual(item.id) || isEqual(item.request_id) || isEqual(item.numericId)
+    })
 
     if(idx === -1){
       return { success:false, message:'Document request not found' }
     }
 
     list[idx].status = status
+    list[idx].updated_at = nowIso()
     save(KEY_DOCS, list)
 
     return { success:true, data:list[idx] }

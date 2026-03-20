@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
 import '../styles/history.css'
-import api from '../api/axios'
+import mockApi from '../api/mockApi'
 
 export default function ManageComplaints(){
   const [items, setItems] = useState([])
@@ -16,11 +16,10 @@ export default function ManageComplaints(){
     setError(null)
 
     try{
-      const res = await api.get('/complaints')
-      if(res.data?.success) setItems(res.data.data || [])
-      else setError(res.data?.message || 'Failed to load')
+      const data = mockApi.listComplaints()
+      setItems(data || [])
     }catch(err){
-      setError(err.message)
+      setError(err?.message || 'Failed to load')
     }
 
     setLoading(false)
@@ -28,22 +27,20 @@ export default function ManageComplaints(){
 
   useEffect(()=>{ load() }, [])
 
-  async function handleUpdate(id){
+  const statusOptions = ['Submitted', 'Pending', 'Resolved', 'Closed']
+
+  async function handleUpdate(id, status){
     const item = items.find(i => i.complaint_id === id)
     if(!item) return
 
-    const status = prompt(
-      'Set status (Submitted, Pending, Resolved, Closed):',
-      item.status || 'Submitted'
-    )
-
-    if(status == null) return
+    if(!status || status === item.status) return
 
     try{
-      await api.put(`/complaints/${id}`, { status })
+      const result = mockApi.updateComplaintStatus(id, status)
+      if(!result.success) throw new Error(result.message || 'Failed to update status')
       load()
     }catch(err){
-      alert('Update failed: ' + (err?.response?.data?.message || err.message))
+      alert('Update failed: ' + (err?.message || 'Unknown error'))
     }
   }
 
@@ -71,6 +68,7 @@ export default function ManageComplaints(){
                     <th>Date</th>
                     <th>Status</th>
                     <th>Action</th>
+                    <th>Last Updated</th>
                   </tr>
                 </thead>
 
@@ -85,13 +83,19 @@ export default function ManageComplaints(){
                         <StatusBadge status={it.status} />
                       </td>
                       <td>
-                        <Button
-                          variant="secondary"
-                          onClick={()=>handleUpdate(it.complaint_id)}
+                        <select
+                          className="ui-input"
+                          value={it.status || 'Submitted'}
+                          onChange={(e) => handleUpdate(it.complaint_id, e.target.value)}
                         >
-                          Change Status
-                        </Button>
+                          {statusOptions.map(option => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
                       </td>
+                      <td>{it.updated_at ? new Date(it.updated_at).toLocaleString() : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

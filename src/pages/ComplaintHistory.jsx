@@ -29,6 +29,19 @@ export default function ComplaintHistory(){
     setSelectedComplaint(null)
   }
 
+  const getStatusEmoji = (status) => {
+    const normalized = (status || '').toLowerCase()
+    if(normalized.includes('processed') || normalized.includes('resolved') || normalized.includes('approved')) return '🟢'
+    if(normalized.includes('processing') || normalized.includes('in progress')) return '🟡'
+    if(normalized.includes('pending') || normalized.includes('submitted')) return '⚪'
+    return '⚪'
+  }
+
+  const summaryItems = data.slice(0, 3).map(item => ({
+    complaint: item.title || item.category || `C-${item.complaint_id}`,
+    statusText: `${item.status || 'Pending'} ${getStatusEmoji(item.status)}`
+  }))
+
   const list = data.filter(item =>
     (filter === 'All' || item.status === filter) &&
     (q === '' ||
