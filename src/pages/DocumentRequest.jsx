@@ -54,6 +54,9 @@ export default function DocumentRequest(){
         type: type,
         document_type: type,
         business_name: type === 'Business Clearance' ? businessName : '',
+        name,
+        birthdate,
+        address,
         purpose: purpose
       })
       
@@ -315,17 +318,6 @@ export default function DocumentRequest(){
                     Yes, Submit
                   </Button>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {submittedRequest && (
-            <div className="form-card" style={{ marginTop: '20px' }}>
-              <h2>Request Submitted:</h2>
-              <div style={{ marginTop: '12px' }}>
-                <Button type="button" onClick={handleDownloadLetter}>
-                  Download Letter
-                </Button>
               </div>
             </div>
           )}

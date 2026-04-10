@@ -234,6 +234,10 @@ const api = {
       type: d.type || d.document_type || '',
       document_type: d.document_type || d.type || '',
       purpose: d.purpose || '',
+      name: d.name || '',
+      birthdate: d.birthdate || '',
+      address: d.address || '',
+      business_name: d.business_name || '',
       notes: d.notes || '',
 
       status: d.status || 'Submitted',
