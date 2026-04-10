@@ -54,7 +54,8 @@ export default function Header(){
   return (
     <header className="top-header">
       <div className="top-left">
-        <div className="barangay-name">Name of the Barangay</div>
+        <div className="barangay-name">Barangay Service & Complaint Management System
+</div>
         <div className="header-sub">
           {user?.role ? (user.role === 'admin' || user.role === 'staff' ? 'Admin' : 'Resident') : ''}
         </div>

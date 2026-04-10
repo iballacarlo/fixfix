@@ -214,6 +214,7 @@ export default function ComplaintForm(){
                   className="ui-input"
                   type="date"
                   value={form.date}
+                  max={new Date().toISOString().split('T')[0]}
                   onChange={e => setField('date', e.target.value)}
                 />
               </div>

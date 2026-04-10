@@ -70,7 +70,7 @@ export default function Sidebar(){
         {/* TOP AREA: municipality name + collapse toggle */}
         <div className="sidebar-top">
           <div className="sidebar-brand" aria-label="Municipality name">
-            City of Bacoor
+            Barangay Mambog II
           </div>
 
           <button

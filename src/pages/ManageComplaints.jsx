@@ -164,8 +164,8 @@ export default function ManageComplaints(){
                     <th>Resident</th>
                     <th>Date</th>
                     <th>Status</th>
-                    <th>Action</th>
                     <th>Last Updated</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
 
@@ -180,20 +180,27 @@ export default function ManageComplaints(){
                         <StatusBadge status={it.status} />
                       </td>
                       <td>
-                        <select
-                          className="ui-input"
-                          value={it.status || 'Submitted'}
-                          onChange={(e) => handleUpdate(it.complaint_id, e.target.value)}
-                        >
-                          {statusOptions.map(option => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                          {new Date(it.date_updated || it.date_submitted || Date.now()).toLocaleDateString()}
+                          <div style={{ fontSize: '0.85rem', marginTop: '4px', fontWeight: '700' }}>
+                            {new Date(it.date_updated || it.date_submitted || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
                       </td>
                       <td>
-                        <div className="table-actions-inline">
+                        <div className="table-actions-inline" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <select
+                            className="ui-input"
+                            value={it.status || 'Submitted'}
+                            onChange={(e) => handleUpdate(it.complaint_id, e.target.value)}
+                            style={{ height: '36px', fontSize: '0.9rem', maxWidth: '140px' }}
+                          >
+                            {statusOptions.map(option => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
                           <button
                             type="button"
                             className="table-action"
@@ -210,7 +217,6 @@ export default function ManageComplaints(){
                           </button>
                         </div>
                       </td>
-                      <td>{it.updated_at ? new Date(it.updated_at).toLocaleString() : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

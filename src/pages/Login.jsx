@@ -92,8 +92,8 @@ export default function Login(){
             />
 
             <div className="brand-copy">
-              <div className="brand-kicker">Municipality</div>
-              <div className="brand-name">City of Bacoor</div>
+              <div className="brand-kicker">Barangay</div>
+              <div className="brand-name">Mambog II</div>
             </div>
           </div>
         </div>
