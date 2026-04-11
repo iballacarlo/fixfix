@@ -6,10 +6,13 @@ import InputField from '../components/InputField'
 import '../styles/form.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
+import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function ComplaintForm(){
+  const { user } = useAuth()
   const [form, setForm] = useState({
+    resident_name: user?.name || '',
     category: '',
     title: '',
     description: '',
@@ -75,6 +78,8 @@ export default function ComplaintForm(){
 
   async function submitToApi(){
     try {
+      const residentName = form.resident_name || user?.name || ''
+
       // Use mock API to ensure all data is stored properly
       const result = mockApi.addComplaint({
         category: form.category,
@@ -83,7 +88,8 @@ export default function ComplaintForm(){
         location: form.location,
         date: form.date,
         anonymous: form.anonymous,
-        images: form.images
+        images: form.images,
+        resident_name: residentName
       })
       
       // Also try to send to real backend for redundancy
@@ -98,6 +104,11 @@ export default function ComplaintForm(){
             formData.append(key, form[key])
           }
         })
+        if (form.resident_name) {
+          formData.append('resident_name', form.resident_name)
+        } else if (user?.name) {
+          formData.append('resident_name', user.name)
+        }
         await api.post('/complaints', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
@@ -179,6 +190,19 @@ export default function ComplaintForm(){
                   onChange={e => setField('title', e.target.value)}
                   error={errors.title}
                   placeholder="Short title (e.g., Loud music at night)"
+                />
+              </div>
+
+              {/* Resident */}
+              <label className="form-label">
+                Resident <span className="req">*</span> 
+              </label>
+              <div className="form-field">
+                <InputField
+                  label={null}
+                  value={form.resident_name}
+                  onChange={e => setField('resident_name', e.target.value)}
+                  placeholder="Resident name"
                 />
               </div>
 

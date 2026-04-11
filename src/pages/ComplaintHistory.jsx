@@ -91,6 +91,7 @@ export default function ComplaintHistory(){
                 <thead>
                   <tr>
                     <th>Reference</th>
+                    <th>Resident</th>
                     <th>Category</th>
                     <th>Date</th>
                     <th>Status</th>
@@ -101,6 +102,7 @@ export default function ComplaintHistory(){
                   {list.map(r => (
                     <tr key={r.complaint_id}>
                       <td>{r.ref || `C-${r.complaint_id}`}</td>
+                      <td>{r.resident_name || r.name || r.resident_id || '—'}</td>
                       <td>{r.category || r.category_id || '—'}</td>
                       <td>{r.date_submitted ? new Date(r.date_submitted).toLocaleDateString() : '—'}</td>
                       <td><StatusBadge status={r.status} /></td>
@@ -140,6 +142,11 @@ export default function ComplaintHistory(){
                 <div className="complaint-detail-row">
                   <span className="detail-label">Reference:</span>
                   <span className="detail-value">{selectedComplaint.ref || `C-${selectedComplaint.complaint_id}`}</span>
+                </div>
+
+                <div className="complaint-detail-row">
+                  <span className="detail-label">Resident:</span>
+                  <span className="detail-value">{selectedComplaint.resident_name || selectedComplaint.name || selectedComplaint.resident_id || '—'}</span>
                 </div>
 
                 <div className="complaint-detail-row">

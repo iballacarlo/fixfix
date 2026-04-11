@@ -153,6 +153,8 @@ const api = {
     const numericId = getNextNumericId(list, 'numericId')
     const reference = generateComplaintRef(list)
 
+    const residentName = c.resident_name || c.name || currentUser?.name || ''
+
     const item = {
       numericId,
       id: reference,
@@ -161,6 +163,8 @@ const api = {
 
       userId: c.userId || currentUser?.id || null,
       resident_id: c.userId || currentUser?.id || null,
+      resident_name: residentName,
+      name: residentName,
 
       category: c.category || c.category_id || '',
       category_id: c.category || c.category_id || '',

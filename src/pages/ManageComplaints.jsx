@@ -99,7 +99,7 @@ export default function ManageComplaints(){
       `Reference: ${record.ref || `C-${record.complaint_id}`}`,
       `Title: ${record.title || 'N/A'}`,
       `Category: ${record.category || record.category_id || 'N/A'}`,
-      `Resident ID: ${record.resident_id || record.userId || 'N/A'}`,
+      `Resident: ${record.resident_name || record.name || record.resident_id || record.userId || 'N/A'}`,
       `Location: ${record.location || 'N/A'}`,
       `Date Submitted: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString() : 'N/A'}`,
       `Status: ${record.status || 'Submitted'}`,
@@ -174,7 +174,7 @@ export default function ManageComplaints(){
                     <tr key={it.complaint_id}>
                       <td>{it.complaint_id}</td>
                       <td>{it.title || it.description?.slice(0,60) || '—'}</td>
-                      <td>{it.resident_id || '—'}</td>
+                      <td>{it.resident_name || it.name || it.resident_id || '—'}</td>
                       <td>{new Date(it.date_submitted || Date.now()).toLocaleDateString()}</td>
                       <td>
                         <StatusBadge status={it.status} />
@@ -236,6 +236,11 @@ export default function ManageComplaints(){
                   <div className="complaint-detail-row">
                     <span className="detail-label">Reference:</span>
                     <span className="detail-value">{selectedComplaint.ref || `C-${selectedComplaint.complaint_id}`}</span>
+                  </div>
+
+                  <div className="complaint-detail-row">
+                    <span className="detail-label">Resident:</span>
+                    <span className="detail-value">{selectedComplaint.resident_name || selectedComplaint.name || selectedComplaint.resident_id || '—'}</span>
                   </div>
 
                   <div className="complaint-detail-row">
