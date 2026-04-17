@@ -41,6 +41,63 @@ html.high-contrast{
   overflow:auto;
 }
 
+.register-shell{
+  overflow:auto;
+  min-height:100vh;
+}
+
+.register-shell .login-main{
+  min-height: auto;
+  align-items:flex-start;
+  justify-content:flex-start;
+  padding:14px 12px 16px;
+}
+
+.register-shell .register-card{
+  max-height: auto;
+  overflow:visible;
+  padding:20px 18px;
+}
+
+.register-shell .login-body{
+  gap:12px;
+}
+
+.register-shell .card-head{
+  gap:12px;
+  margin-bottom:0;
+}
+
+.register-shell .register-steps{
+  margin-bottom:12px;
+  gap:8px;
+}
+
+.register-shell .register-grid{
+  margin-top:12px;
+  gap:14px;
+}
+
+.register-shell .register-col{
+  padding:16px;
+  gap:12px;
+}
+
+.register-shell .register-title{
+  margin:0 0 12px;
+  font-size:0.95rem;
+}
+
+.register-shell .register-actions{
+  margin-top:10px;
+  gap:8px;
+}
+
+.register-shell .bottom-text{
+  margin-top:10px;
+  font-size:0.92rem;
+}
+
 /* =========================
    Login Header / Topbar
 ========================= */
@@ -393,19 +450,25 @@ html.high-contrast{
   padding:30px;
   box-shadow: var(--shadow);
   border:1px solid var(--login-card-border);
-  display:flex;
-  align-items:center;
+  display:block;
 }
 
 .login-body{
   width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
 }
 
 .card-head{
-  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:18px;
+  margin-bottom:0;
 }
 
-.card-title{
+.register-card .card-title{
   margin:0;
   font-size:2rem;
   line-height:1.1;
@@ -413,11 +476,15 @@ html.high-contrast{
   color: var(--primary-color);
 }
 
-.card-sub{
-  margin:10px 0 22px;
+.register-card .card-sub{
+  margin:0;
   font-size:0.96rem;
   color: var(--muted-color);
-  line-height:1.5;
+  line-height:1.4;
+}
+
+.register-card .register-steps{
+  margin-top:0;
 }
 
 .login-row{
@@ -559,28 +626,118 @@ html.dark .slider{
   overflow:auto;
 }
 
+.register-steps{
+  display:flex;
+  gap:12px;
+  justify-content:space-between;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+
+.step-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  border:1px solid var(--border-color);
+  padding:10px 14px;
+  border-radius:16px;
+  color: var(--muted-color);
+  font-size:0.95rem;
+  font-weight:700;
+  min-width: calc(33.33% - 8px);
+  justify-content:center;
+  cursor:pointer;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease;
+}
+
+.step-item:hover:not(:disabled){
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+}
+
+..step-item.step-active{
+  border-color: var(--primary-color);
+  color: var(--text-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--card-bg));
+}
+
+.step-item button{
+  all: unset;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
+}
+
+.step-item:disabled,
+.step-item[disabled]{
+  opacity:0.55;
+  cursor:not-allowed;
+}
+
+.step-count{
+  min-width:28px;
+  min-height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background: var(--primary-color);
+  color:#ffffff;
+  font-size:0.9rem;
+}
+
 .register-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:18px;
-  margin-top:14px;
+  grid-template-columns: 1fr;
+  gap:22px;
+  margin-top:18px;
 }
 
 .register-col{
   border:1px solid var(--border-color);
-  border-radius:16px;
-  padding:14px 14px 12px;
-  background: color-mix(in srgb, var(--card-bg) 78%, transparent);
+  border-radius:18px;
+  padding:20px;
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  min-width:0;
 }
 
 .register-title{
   display:flex;
   align-items:center;
   gap:10px;
+  font-size:1rem;
   font-weight:900;
-  margin:2px 0 12px;
+  margin:0 0 16px;
   color: var(--text-color);
 }
+
+.step-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:28px;
+  min-height:28px;
+  border-radius:999px;
+  background: var(--primary-color);
+  color:#ffffff;
+  font-size:0.9rem;
+  font-weight:900;
+  padding:0 8px;
+}
+
+.register-col p{
+  margin:0;
+  color: var(--muted-color);
+  line-height:1.6;
+}
+
 
 .pw-hint{
   margin:-6px 0 10px;
@@ -611,12 +768,19 @@ html.dark .slider{
 .register-actions{
   display:flex;
   justify-content:flex-end;
+  gap:12px;
+  flex-wrap:wrap;
   margin-top:14px;
 }
 
+.register-actions button{
+  min-width:140px;
+}
+
 .register-card{
-  width:950px !important;
-  max-width:100% !important;
+  width:100% !important;
+  max-width:1080px !important;
+  margin:0 auto;
 }
 
 /* =========================
@@ -668,7 +832,15 @@ html.high-contrast .switch input:checked + .slider{
 @media (max-width: 1100px){
   .login-shell{
     min-height:100vh;
-    overflow:auto;
+  }
+
+  .register-shell .login-main{
+    min-height: auto;
+    padding:12px 12px 14px;
+  }
+
+  .register-shell .register-card{
+    max-width:100% !important;
   }
 
   .login-main{

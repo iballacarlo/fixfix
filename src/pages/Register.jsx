@@ -7,6 +7,15 @@ import { useSettings } from '../context/SettingsContext'
 import '../styles/login.css'
 import Logo from '../assets/Bacoor.png'
 
+// Address data mapping for Phase-Street combinations
+const addressData = {
+  'Parkdale 1': ['Sundale', 'Mondale', 'Tuesdale', 'Thursdale'],
+  'Parkdale 2': ['St. Joseph', 'St. Martin', 'St. Clement', 'St. Francis', 'St. Claire'],
+  'Phase 1': ['Gardeania', 'Sunflower', 'Marigold', 'Yellowbell', 'Primrose', 'Irish', 'Dahlia', 'Tulip', 'Daffodil', 'Baes', 'Begonia'],
+  'Phase 2': ['Mercury', 'Venus', 'Palomar', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'],
+  'Phase 3': ['Diamond', 'Jade', 'Emerald', 'Sapphire', 'Ruby']
+}
+
 export default function Register(){
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -23,17 +32,84 @@ export default function Register(){
     last: '',
     suffix: '',
     gender: '',
+    phase: '',
+    street: '',
+    block: '',
+    lot: '',
     email: '',
     password: '',
     confirm: '',
   })
 
+  const [currentStep, setCurrentStep] = useState(0)
   const [err, setErr] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const panelRef = useRef(null)
 
   function setField(key, value){
     setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  const stepLabels = ['Personal', 'Address', 'Account']
+
+  function isStepValid(step){
+    if(step === 0){
+      return form.first.trim() && form.last.trim() && form.gender.trim()
+    }
+
+    if(step === 1){
+      return form.phase.trim() && form.street.trim() && form.block.trim() && form.lot.trim()
+    }
+
+    if(step === 2){
+      return form.email.trim() && form.password.length >= 6 && form.password === form.confirm
+    }
+
+    return false
+  }
+
+  function validateStep(step){
+    if(step === 0){
+      if(!isStepValid(0)){
+        setErr('Please complete all personal information before continuing.')
+        return false
+      }
+    }
+
+    if(step === 1){
+      if(!isStepValid(1)){
+        setErr('Please complete all address information before continuing.')
+        return false
+      }
+    }
+
+    if(step === 2){
+      if(!form.email.trim()){
+        setErr('Email is required.')
+        return false
+      }
+
+      if(form.password.length < 6){
+        setErr('Password must be at least 6 characters.')
+        return false
+      }
+
+      if(form.password !== form.confirm){
+        setErr('Passwords do not match.')
+        return false
+      }
+    }
+
+    setErr('')
+    return true
+  }
+
+  function canGoToStep(index){
+    if(index <= currentStep) return true
+    for(let i = 0; i < index; i++){
+      if(!isStepValid(i)) return false
+    }
+    return true
   }
 
   const passwordsMatch =
@@ -50,23 +126,7 @@ export default function Register(){
     e.preventDefault()
     setErr('')
 
-    if(!form.first.trim() || !form.last.trim()){
-      setErr('Please enter your name.')
-      return
-    }
-
-    if(!form.email.trim()){
-      setErr('Email is required.')
-      return
-    }
-
-    if(form.password.length < 6){
-      setErr('Password must be at least 6 characters.')
-      return
-    }
-
-    if(form.password !== form.confirm){
-      setErr('Passwords do not match.')
+    if(!validateStep(0) || !validateStep(1) || !validateStep(2)){
       return
     }
 
@@ -74,10 +134,14 @@ export default function Register(){
       `${form.first} ${form.middle ? form.middle + ' ' : ''}${form.last}${form.suffix ? ' ' + form.suffix : ''}`.trim()
 
     const res = await register({
-      name: fullName,
+      first_name: form.first,
+      middle_name: form.middle,
+      last_name: form.last,
+      suffix: form.suffix,
+      gender: form.gender,
       email: form.email,
       password: form.password,
-      gender: form.gender,
+      address: `${form.phase}, ${form.street}, Block ${form.block}, Lot ${form.lot}`
     })
 
     if(res.ok) navigate('/dashboard')
@@ -112,7 +176,7 @@ export default function Register(){
   ]), [])
 
   return (
-    <div className="login-shell">
+    <div className="login-shell register-shell">
       <header className="login-topbar">
         <div className="topbar-left">
           <div className="topbar-brand">
@@ -222,108 +286,221 @@ export default function Register(){
       <main className="login-main">
         <form className="login-card register-card" onSubmit={handle} noValidate>
           <div className="login-body">
-            <h2 className="card-title">Create Account</h2>
-            <p className="card-sub">Fill out your details to create your resident account.</p>
+            <div className="card-head">
+              <h2 className="card-title">Create Account</h2>
+              <p className="card-sub">Fill out your details to create your resident account.</p>
+            </div>
+
+            <div className="register-steps" aria-label="Registration steps">
+              {stepLabels.map((label, index) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={`step-item ${currentStep === index ? 'step-active' : ''}`}
+                  onClick={() => canGoToStep(index) && setCurrentStep(index)}
+                  disabled={!canGoToStep(index)}
+                >
+                  <span className="step-count">{index + 1}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
 
             <div className="register-grid">
-              <div className="register-col">
-                <div className="register-title">Personal Information</div>
+              {currentStep === 0 && (
+                <div className="register-col">
+                  <div className="register-title">
+                    <span className="step-pill">1</span>
+                    Personal Information
+                  </div>
 
-                <InputField
-                  label="First Name *"
-                  value={form.first}
-                  onChange={e => setField('first', e.target.value)}
-                  placeholder="Juan"
-                  autoComplete="given-name"
-                />
+                  <InputField
+                    label="First Name *"
+                    value={form.first}
+                    onChange={e => setField('first', e.target.value)}
+                    placeholder="Juan"
+                    autoComplete="given-name"
+                  />
 
-                <InputField
-                  label="Middle Name"
-                  value={form.middle}
-                  onChange={e => setField('middle', e.target.value)}
-                  placeholder="Optional"
-                  autoComplete="additional-name"
-                />
+                  <InputField
+                    label="Middle Name"
+                    value={form.middle}
+                    onChange={e => setField('middle', e.target.value)}
+                    placeholder="Optional"
+                    autoComplete="additional-name"
+                  />
 
-                <InputField
-                  label="Last Name *"
-                  value={form.last}
-                  onChange={e => setField('last', e.target.value)}
-                  placeholder="Dela Cruz"
-                  autoComplete="family-name"
-                />
+                  <InputField
+                    label="Last Name *"
+                    value={form.last}
+                    onChange={e => setField('last', e.target.value)}
+                    placeholder="Dela Cruz"
+                    autoComplete="family-name"
+                  />
 
-                <InputField
-                  label="Suffix"
-                  value={form.suffix}
-                  onChange={e => setField('suffix', e.target.value)}
-                  placeholder="Optional"
-                  autoComplete="honorific-suffix"
-                />
+                  <InputField
+                    label="Suffix"
+                    value={form.suffix}
+                    onChange={e => setField('suffix', e.target.value)}
+                    placeholder="Optional"
+                    autoComplete="honorific-suffix"
+                  />
 
-                <div className="form-group">
-                  <label className="field-label">Gender</label>
-                  <select
-                    className="field-input"
-                    value={form.gender}
-                    onChange={e => setField('gender', e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
+                  <div className="form-group">
+                    <label className="field-label">Gender *</label>
+                    <select
+                      className="field-input"
+                      value={form.gender}
+                      onChange={e => setField('gender', e.target.value)}
+                    >
+                      <option value="">Select</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  {err && <div className="error">{err}</div>}
+
+                  <div className="register-actions step-actions">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if(validateStep(0)) setCurrentStep(1)
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="register-col">
-                <div className="register-title">Account Details</div>
+              {currentStep === 1 && (
+                <div className="register-col">
+                  <div className="register-title">
+                    <span className="step-pill">2</span>
+                    Address Information
+                  </div>
 
-                <InputField
-                  label="Email *"
-                  type="email"
-                  value={form.email}
-                  onChange={e => setField('email', e.target.value)}
-                  placeholder="you@email.com"
-                  autoComplete="email"
-                />
+                  <div className="form-group">
+                    <label className="field-label">Phase *</label>
+                    <select
+                      className="field-input"
+                      value={form.phase}
+                      onChange={e => {
+                        setField('phase', e.target.value)
+                        setField('street', '') // Reset street when phase changes
+                      }}
+                    >
+                      <option value="">Select Phase</option>
+                      {Object.keys(addressData).map(phase => (
+                        <option key={phase} value={phase}>{phase}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <InputField
-                  label="Password *"
-                  type="password"
-                  allowToggle
-                  value={form.password}
-                  onChange={e => setField('password', e.target.value)}
-                  placeholder="Create a password"
-                  autoComplete="new-password"
-                />
+                  <div className="form-group">
+                    <label className="field-label">Street *</label>
+                    <select
+                      className="field-input"
+                      value={form.street}
+                      onChange={e => setField('street', e.target.value)}
+                      disabled={!form.phase}
+                    >
+                      <option value="">Select Street</option>
+                      {form.phase && addressData[form.phase].map(street => (
+                        <option key={street} value={street}>{street}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="pw-hint">Use at least <strong>6 characters</strong>.</div>
+                  <InputField
+                    label="Block *"
+                    value={form.block}
+                    onChange={e => setField('block', e.target.value)}
+                    placeholder="Block number"
+                  />
 
-                <InputField
-                  label="Confirm Password *"
-                  type="password"
-                  allowToggle
-                  value={form.confirm}
-                  onChange={e => setField('confirm', e.target.value)}
-                  placeholder="Re-type password"
-                  autoComplete="new-password"
-                />
+                  <InputField
+                    label="Lot *"
+                    value={form.lot}
+                    onChange={e => setField('lot', e.target.value)}
+                    placeholder="Lot number"
+                  />
 
-                {passwordsMatch && <div className="pw-ok">✅ Passwords match</div>}
-                {passwordsMismatch && <div className="pw-bad">⚠️ Passwords do not match</div>}
+                  {err && <div className="error">{err}</div>}
 
-                {err && <div className="error">{err}</div>}
-
-                <div className="register-actions">
-                  <Button type="submit">Register</Button>
+                  <div className="register-actions step-actions">
+                    <Button type="button" variant="secondary" onClick={() => setCurrentStep(0)}>
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if(validateStep(1)) setCurrentStep(2)
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
+              )}
 
-                <p className="muted bottom-text" style={{ marginTop: 12 }}>
-                  Already have an account? <Link to="/login">Login</Link>
-                </p>
-              </div>
+              {currentStep === 2 && (
+                <div className="register-col">
+                  <div className="register-title">
+                    <span className="step-pill">3</span>
+                    Account Details
+                  </div>
+
+                  <InputField
+                    label="Email *"
+                    type="email"
+                    value={form.email}
+                    onChange={e => setField('email', e.target.value)}
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                  />
+
+                  <InputField
+                    label="Password *"
+                    type="password"
+                    allowToggle
+                    value={form.password}
+                    onChange={e => setField('password', e.target.value)}
+                    placeholder="Create a password"
+                    autoComplete="new-password"
+                  />
+
+                  <div className="pw-hint">Use at least <strong>6 characters</strong>.</div>
+
+                  <InputField
+                    label="Confirm Password *"
+                    type="password"
+                    allowToggle
+                    value={form.confirm}
+                    onChange={e => setField('confirm', e.target.value)}
+                    placeholder="Re-type password"
+                    autoComplete="new-password"
+                  />
+
+                  {passwordsMatch && <div className="pw-ok">✅ Passwords match</div>}
+                  {passwordsMismatch && <div className="pw-bad">⚠️ Passwords do not match</div>}
+
+                  {err && <div className="error">{err}</div>}
+
+                  <div className="register-actions step-actions">
+                    <Button type="button" variant="secondary" onClick={() => setCurrentStep(1)}>
+                      Back
+                    </Button>
+                    <Button type="submit">Register</Button>
+                  </div>
+                </div>
+              )}
             </div>
+            <p className="muted bottom-text" style={{ marginTop: 18 }}>
+              Already have an account? <Link to="/login">Login</Link>
+            </p>
           </div>
         </form>
       </main>

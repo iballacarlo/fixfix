@@ -166,6 +166,10 @@ const api = {
       resident_name: residentName,
       name: residentName,
 
+      // Respondent (person being complained about) - optional
+      respondent_name: c.respondent_name || '',
+      respondent_contact: c.respondent_contact || '',
+
       category: c.category || c.category_id || '',
       category_id: c.category || c.category_id || '',
       title: c.title || '',

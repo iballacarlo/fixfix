@@ -72,72 +72,502 @@ export default function ManageComplaints(){
     })
   }
 
-  async function handleDownloadPdf(complaint){
-    const record = complaint || selectedComplaint
-    if(!record) return
-
+  async function generateRespondentNoticeLetterPdf(record){
     const pdfDoc = await PDFDocument.create()
-    let page = pdfDoc.addPage([620, 520])
+    let page = pdfDoc.addPage([620, 800])
     const { height } = page.getSize()
     const normalFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-    const header = 'Barangay Complaint Record'
     let y = height - 40
 
+    // Title
+    const header = 'BARANGAY COMPLAINT NOTICE'
     page.drawText(header, {
       x: 40,
       y,
-      size: 18,
+      size: 16,
       font: boldFont,
       color: rgb(0, 0, 0)
     })
+    y -= 30
 
-    y -= 32
+    // Date
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    page.drawText(`Date: ${dateStr}`, {
+      x: 40,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 25
 
-    const content = [
-      `Reference: ${record.ref || `C-${record.complaint_id}`}`,
-      `Title: ${record.title || 'N/A'}`,
-      `Category: ${record.category || record.category_id || 'N/A'}`,
-      `Resident: ${record.resident_name || record.name || record.resident_id || record.userId || 'N/A'}`,
-      `Location: ${record.location || 'N/A'}`,
-      `Date Submitted: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString('en-US') : 'N/A'}`,
-      `Status: ${record.status || 'Submitted'}`,
-      '',
-      'Complaint Letter:',
-      ...wrapText(record.description || 'No description provided.', 72),
-      '',
-      'Notes:',
-      ...wrapText(record.notes || 'None', 72)
-    ]
+    // To: Respondent
+    page.drawText('To:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
 
-    content.forEach(line => {
+    page.drawText(record.respondent_name || 'Sir/Madam', {
+      x: 50,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    if(record.respondent_contact){
+      const contactLines = wrapText(record.respondent_contact, 50)
+      contactLines.forEach(line => {
+        page.drawText(line, {
+          x: 50,
+          y,
+          size: 11,
+          font: normalFont,
+          color: rgb(0, 0, 0)
+        })
+        y -= 18
+      })
+    }
+
+    y -= 10
+
+    // Salutation
+    page.drawText('Dear ' + (record.respondent_name || 'Sir/Madam') + ',', {
+      x: 40,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 25
+
+    // Main body text
+    const bodyIntro = wrapText('This is to notify you that a formal complaint has been filed against you with our Barangay Office. Please see the details below:', 70)
+    bodyIntro.forEach(line => {
       page.drawText(line, {
         x: 40,
         y,
-        size: 12,
-        font: /Complaint Letter:|Notes:/.test(line) ? boldFont : normalFont,
+        size: 11,
+        font: normalFont,
         color: rgb(0, 0, 0)
       })
       y -= 18
-      if(y < 40){
+    })
+
+    y -= 8
+
+    // Complaint Details Section
+    page.drawText('COMPLAINT DETAILS:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    const details = [
+      `Reference Number: ${record.ref || `C-${record.complaint_id}`}`,
+      `Complainant: ${record.anonymous ? 'Anonymous' : (record.resident_name || 'Unknown')}`,
+      `Category: ${record.category || record.category_id || 'General'}`,
+      `Incident Location: ${record.location || 'N/A'}`,
+      `Date of Incident: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString('en-US') : 'N/A'}`,
+      `Date Submitted: ${new Date().toLocaleDateString('en-US')}`
+    ]
+
+    details.forEach(detail => {
+      page.drawText(detail, {
+        x: 50,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+    })
+
+    y -= 8
+
+    // Complaint Description
+    page.drawText('NATURE OF COMPLAINT:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    const descLines = wrapText(record.description || 'No description provided.', 70)
+    descLines.forEach(line => {
+      page.drawText(line, {
+        x: 50,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+      if(y < 60){
         y = height - 40
-        const nextPage = pdfDoc.addPage([620, 520])
+        const nextPage = pdfDoc.addPage([620, 800])
         page = nextPage
       }
     })
 
+    y -= 8
+
+    // Barangay Notes
+    if(record.notes && record.notes.trim()){
+      page.drawText('BARANGAY NOTES:', {
+        x: 40,
+        y,
+        size: 11,
+        font: boldFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 18
+
+      const noteLines = wrapText(record.notes, 70)
+      noteLines.forEach(line => {
+        page.drawText(line, {
+          x: 50,
+          y,
+          size: 10,
+          font: normalFont,
+          color: rgb(0, 0, 0)
+        })
+        y -= 16
+        if(y < 60){
+          y = height - 40
+          const nextPage = pdfDoc.addPage([620, 800])
+          page = nextPage
+        }
+      })
+      y -= 8
+    }
+
+    // Status
+    page.drawText(`Current Status: ${record.status || 'Submitted'}`, {
+      x: 40,
+      y,
+      size: 10,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 25
+
+    // Closing statement
+    const closingLines = wrapText('You are requested to respond to this complaint within seven (7) days by contacting our Barangay Office. Failure to respond may result in further action by the Barangay.', 70)
+    closingLines.forEach(line => {
+      page.drawText(line, {
+        x: 40,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+    })
+
+    y -= 15
+
+    // Signature line
+    page.drawText('Respectfully,', {
+      x: 40,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 30
+    y -= 8
+
+    page.drawText('____________________________', {
+      x: 40,
+      y,
+      size: 10,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 15
+
+    page.drawText('Barangay Office', {
+      x: 40,
+      y,
+      size: 10,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+
     const pdfBytes = await pdfDoc.save()
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    const fileNameText = (record.ref || `C-${record.complaint_id}`).replace(/[^a-zA-Z0-9-_]/g, '_')
-    link.download = `${fileNameText}_complaint.pdf`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    return pdfBytes
+  }
+
+  async function generatePublicNoticePdf(record){
+    const pdfDoc = await PDFDocument.create()
+    let page = pdfDoc.addPage([620, 800])
+    const { height } = page.getSize()
+    const normalFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+
+    let y = height - 40
+
+    // Title
+    const header = 'BARANGAY PUBLIC NOTICE'
+    page.drawText(header, {
+      x: 40,
+      y,
+      size: 16,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 30
+
+    // Date
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    page.drawText(`Date: ${dateStr}`, {
+      x: 40,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 25
+
+    // Heading
+    page.drawText('NOTICE TO ALL RESIDENTS', {
+      x: 40,
+      y,
+      size: 12,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 25
+
+    // Body text
+    const bodyLines = wrapText('The Barangay Office has received a complaint regarding the following matter. This notice is issued for public awareness and records purposes.', 70)
+    bodyLines.forEach(line => {
+      page.drawText(line, {
+        x: 40,
+        y,
+        size: 11,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 18
+    })
+
+    y -= 10
+
+    // Complaint Details
+    page.drawText('COMPLAINT DETAILS:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    const details = [
+      `Reference Number: ${record.ref || `C-${record.complaint_id}`}`,
+      `Category: ${record.category || record.category_id || 'General'}`,
+      `Location: ${record.location || 'N/A'}`,
+      `Date Reported: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString('en-US') : 'N/A'}`
+    ]
+
+    details.forEach(detail => {
+      page.drawText(detail, {
+        x: 50,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+    })
+
+    y -= 8
+
+    // Description
+    page.drawText('DESCRIPTION:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    const descLines = wrapText(record.description || 'No description provided.', 70)
+    descLines.forEach(line => {
+      page.drawText(line, {
+        x: 50,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+      if(y < 60){
+        y = height - 40
+        const nextPage = pdfDoc.addPage([620, 800])
+        page = nextPage
+      }
+    })
+
+    y -= 8
+
+    // Barangay Action
+    page.drawText('BARANGAY ACTION:', {
+      x: 40,
+      y,
+      size: 11,
+      font: boldFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 18
+
+    const status = record.status || 'Under Review'
+    const actionText = `Status: ${status}. The Barangay Office is ${status === 'Resolved' ? 'has completed its review of' : status === 'Closed' ? 'has closed the case regarding' : 'currently reviewing'} this matter.`
+    const actionLines = wrapText(actionText, 70)
+    actionLines.forEach(line => {
+      page.drawText(line, {
+        x: 50,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+      if(y < 60){
+        y = height - 40
+        const nextPage = pdfDoc.addPage([620, 800])
+        page = nextPage
+      }
+    })
+
+    if(record.notes && record.notes.trim()){
+      y -= 8
+      page.drawText('NOTES:', {
+        x: 40,
+        y,
+        size: 11,
+        font: boldFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 18
+
+      const noteLines = wrapText(record.notes, 70)
+      noteLines.forEach(line => {
+        page.drawText(line, {
+          x: 50,
+          y,
+          size: 10,
+          font: normalFont,
+          color: rgb(0, 0, 0)
+        })
+        y -= 16
+        if(y < 60){
+          y = height - 40
+          const nextPage = pdfDoc.addPage([620, 800])
+          page = nextPage
+        }
+      })
+    }
+
+    y -= 15
+
+    // Contact info
+    const contactLines = wrapText('For inquiries regarding this matter, please contact the Barangay Office at your earliest convenience.', 70)
+    contactLines.forEach(line => {
+      page.drawText(line, {
+        x: 40,
+        y,
+        size: 10,
+        font: normalFont,
+        color: rgb(0, 0, 0)
+      })
+      y -= 16
+      if(y < 40){
+        y = height - 40
+        const nextPage = pdfDoc.addPage([620, 800])
+        page = nextPage
+      }
+    })
+
+    y -= 15
+
+    // Signature
+    page.drawText('Respectfully,', {
+      x: 40,
+      y,
+      size: 11,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 30
+    y -= 8
+
+    page.drawText('____________________________', {
+      x: 40,
+      y,
+      size: 10,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+    y -= 15
+
+    page.drawText('Barangay Office', {
+      x: 40,
+      y,
+      size: 10,
+      font: normalFont,
+      color: rgb(0, 0, 0)
+    })
+
+    const pdfBytes = await pdfDoc.save()
+    return pdfBytes
+  }
+
+  async function handleDownloadPdf(complaint){
+    const record = complaint || selectedComplaint
+    if(!record) return
+
+    try{
+      let pdfBytes
+      const fileType = record.respondent_name ? 'notice' : 'public-notice'
+
+      if(record.respondent_name){
+        // Targeted complaint letter to respondent
+        pdfBytes = await generateRespondentNoticeLetterPdf(record)
+      } else {
+        // Public notice (no specific respondent)
+        pdfBytes = await generatePublicNoticePdf(record)
+      }
+
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const fileNameText = (record.ref || `C-${record.complaint_id}`).replace(/[^a-zA-Z0-9-_]/g, '_')
+      link.download = `${fileNameText}_${fileType}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch(err){
+      alert('Error generating PDF: ' + (err.message || 'Unknown error'))
+      console.error(err)
+    }
   }
 
   return (

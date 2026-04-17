@@ -20,6 +20,8 @@ export default function ComplaintForm(){
     date: '',
     anonymous: false,
     images: [], // Changed from image to images array
+    respondent_name: '',
+    respondent_contact: '',
   })
 
   const [errors, setErrors] = useState({})
@@ -96,7 +98,9 @@ export default function ComplaintForm(){
         date: form.date ? formatMmDdYyyy(form.date) : '',
         anonymous: form.anonymous,
         images: form.images,
-        resident_name: residentName
+        resident_name: residentName,
+        respondent_name: form.respondent_name,
+        respondent_contact: form.respondent_contact
       })
       
       // Also try to send to real backend for redundancy
@@ -208,6 +212,33 @@ export default function ComplaintForm(){
                   value={form.resident_name}
                   onChange={e => setField('resident_name', e.target.value)}
                   placeholder="Resident name"
+                />
+              </div>
+
+              {/* Respondent Name */}
+              <label className="form-label">
+                Respondent Name (Optional)
+              </label>
+              <div className="form-field">
+                <InputField
+                  label={null}
+                  value={form.respondent_name}
+                  onChange={e => setField('respondent_name', e.target.value)}
+                  placeholder="Name of person being complained about (leave blank if N/A)"
+                />
+                <div className="helper">Optional. Who is this complaint about? Leave blank for general/area-based complaints.</div>
+              </div>
+
+              {/* Respondent Contact */}
+              <label className="form-label">
+                Respondent Contact (Optional)
+              </label>
+              <div className="form-field">
+                <InputField
+                  label={null}
+                  value={form.respondent_contact}
+                  onChange={e => setField('respondent_contact', e.target.value)}
+                  placeholder="Phone number or email (optional)"
                 />
               </div>
 
