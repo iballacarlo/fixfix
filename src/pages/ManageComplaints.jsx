@@ -101,7 +101,7 @@ export default function ManageComplaints(){
       `Category: ${record.category || record.category_id || 'N/A'}`,
       `Resident: ${record.resident_name || record.name || record.resident_id || record.userId || 'N/A'}`,
       `Location: ${record.location || 'N/A'}`,
-      `Date Submitted: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString() : 'N/A'}`,
+      `Date Submitted: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString('en-US') : 'N/A'}`,
       `Status: ${record.status || 'Submitted'}`,
       '',
       'Complaint Letter:',
@@ -175,13 +175,13 @@ export default function ManageComplaints(){
                       <td>{it.complaint_id}</td>
                       <td>{it.title || it.description?.slice(0,60) || '—'}</td>
                       <td>{it.resident_name || it.name || it.resident_id || '—'}</td>
-                      <td>{new Date(it.date_submitted || Date.now()).toLocaleDateString()}</td>
+                      <td>{new Date(it.date_submitted || Date.now()).toLocaleDateString('en-US')}</td>
                       <td>
                         <StatusBadge status={it.status} />
                       </td>
                       <td>
                         <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                          {new Date(it.date_updated || it.date_submitted || Date.now()).toLocaleDateString()}
+                          {new Date(it.date_updated || it.date_submitted || Date.now()).toLocaleDateString('en-US')}
                           <div style={{ fontSize: '0.85rem', marginTop: '4px', fontWeight: '700' }}>
                             {new Date(it.date_updated || it.date_submitted || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
@@ -265,7 +265,7 @@ export default function ManageComplaints(){
 
                   <div className="complaint-detail-row">
                     <span className="detail-label">Submitted:</span>
-                    <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString() : '—'}</span>
+                    <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString('en-US') : '—'}</span>
                   </div>
 
                   <div className="complaint-detail-row">

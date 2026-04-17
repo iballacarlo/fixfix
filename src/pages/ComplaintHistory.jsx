@@ -104,7 +104,7 @@ export default function ComplaintHistory(){
                       <td>{r.ref || `C-${r.complaint_id}`}</td>
                       <td>{r.resident_name || r.name || r.resident_id || '—'}</td>
                       <td>{r.category || r.category_id || '—'}</td>
-                      <td>{r.date_submitted ? new Date(r.date_submitted).toLocaleDateString() : '—'}</td>
+                      <td>{r.date_submitted ? new Date(r.date_submitted).toLocaleDateString('en-US') : '—'}</td>
                       <td><StatusBadge status={r.status} /></td>
                       <td>
                         <button 
@@ -171,7 +171,7 @@ export default function ComplaintHistory(){
 
                 <div className="complaint-detail-row">
                   <span className="detail-label">Date Submitted:</span>
-                  <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString() : '—'}</span>
+                  <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString('en-US') : '—'}</span>
                 </div>
 
                 <div className="complaint-detail-row">

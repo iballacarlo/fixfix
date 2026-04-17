@@ -50,7 +50,7 @@ export default function DocumentHistory(){
                       <td>{d.reference_number}</td>
                       <td>{d.name || d.resident_id || '—'}</td>
                       <td>{d.document_type}</td>
-                      <td>{new Date(d.date_requested).toLocaleDateString()}</td>
+                      <td>{new Date(d.date_requested).toLocaleDateString('en-US')}</td>
                       <td>{d.status}</td>
                       <td>
                         <button className="table-action">

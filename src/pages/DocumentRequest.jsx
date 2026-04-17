@@ -12,16 +12,20 @@ const DOC_TYPES = [
   'Barangay Clearance',
   'Certificate of Residency',
   'Certificate of Indigency',
-  'Business Clearance',
 ]
 
 export default function DocumentRequest(){
   const [type, setType] = useState('Barangay Clearance')
-  const [businessName, setBusinessName] = useState('')
   const [purpose, setPurpose] = useState('')
   const [name, setName] = useState('')
   const [birthdate, setBirthdate] = useState('')
   const [address, setAddress] = useState('')
+
+  const formatMmDdYyyy = (value) => {
+    const date = new Date(value)
+    if(!value || Number.isNaN(date.getTime())) return ''
+    return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`
+  }
   const [errors, setErrors] = useState({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submittedRequest, setSubmittedRequest] = useState(null)
@@ -32,9 +36,9 @@ export default function DocumentRequest(){
     const e = {}
     if(!name.trim()) e.name = 'Name is required'
     if(!birthdate.trim()) e.birthdate = 'Birthdate is required'
+    else if(Number.isNaN(new Date(birthdate).getTime())) e.birthdate = 'Birthdate must be valid'
     if(!address.trim()) e.address = 'Address is required'
     if(!type) e.type = 'Document type is required'
-    if(type === 'Business Clearance' && !businessName.trim()) e.businessName = 'Business name is required'
     if(!purpose.trim()) e.purpose = 'Purpose is required'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -42,7 +46,6 @@ export default function DocumentRequest(){
 
   function onPickType(next){
     setType(next)
-    if(next !== 'Business Clearance') setBusinessName('')
     setErrors(prev => ({ ...prev, type: undefined, businessName: undefined }))
   }
 
@@ -53,9 +56,8 @@ export default function DocumentRequest(){
         userId: JSON.parse(localStorage.getItem('mock_current_user') || '{}')?.id,
         type: type,
         document_type: type,
-        business_name: type === 'Business Clearance' ? businessName : '',
         name,
-        birthdate,
+        birthdate: birthdate ? formatMmDdYyyy(birthdate) : '',
         address,
         purpose: purpose
       })
@@ -67,7 +69,6 @@ export default function DocumentRequest(){
           birthdate,
           address,
           document_type: type,
-          business_name: type === 'Business Clearance' ? businessName : '',
           purpose
         })
       } catch(err) {
@@ -90,14 +91,13 @@ export default function DocumentRequest(){
           type,
           status: 'Processed by Admin',
           description: `This certifies that the resident has requested a ${type.toLowerCase()} and it has been approved.`,
-          date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          date: new Date().toLocaleDateString('en-US')
         })
         setConfirmOpen(false)
         setName('')
         setBirthdate('')
         setAddress('')
         setPurpose('')
-        setBusinessName('')
       } else {
         alert('Error: ' + res.data.message)
       }
@@ -253,22 +253,6 @@ export default function DocumentRequest(){
                 {errors.type && <div className="field-error">{errors.type}</div>}
               </div>
 
-              {type === 'Business Clearance' && (
-                <>
-                  <label className="form-label">
-                    Business Name <span className="req">*</span>
-                  </label>
-                  <div className="form-field">
-                    <input
-                      className={`ui-input ${errors.businessName ? 'ui-error' : ''}`}
-                      value={businessName}
-                      onChange={e => setBusinessName(e.target.value)}
-                      placeholder="Enter business name"
-                    />
-                    {errors.businessName && <div className="field-error">{errors.businessName}</div>}
-                  </div>
-                </>
-              )}
 
               <label className="form-label">
                 Purpose <span className="req">*</span>

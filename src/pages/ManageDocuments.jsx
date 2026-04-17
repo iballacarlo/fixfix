@@ -192,7 +192,7 @@ export default function ManageDocuments(){
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-    const issuedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    const issuedDate = new Date().toLocaleDateString('en-US')
 
     const logoBytes = await fetch(BacoorLogo).then((res) => res.arrayBuffer())
     const logoImage = await pdfDoc.embedPng(logoBytes)
@@ -369,7 +369,7 @@ export default function ManageDocuments(){
                       <td>{it.reference_number || it.request_id}</td>
                       <td>{it.document_type || it.document}</td>
                       <td>{it.name || it.resident_id || '—'}</td>
-                      <td>{new Date(it.date_requested || Date.now()).toLocaleDateString()}</td>
+                      <td>{new Date(it.date_requested || Date.now()).toLocaleDateString('en-US')}</td>
                       <td><StatusBadge status={it.status}/></td>
                       <td>
                         <div className="table-actions-inline">
@@ -436,7 +436,7 @@ export default function ManageDocuments(){
                           </div>
 
                           <div className="document-preview-footer">
-                            <div style={{ marginTop: '8px', fontSize: '9px' }}>Date Issued: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                            <div style={{ marginTop: '8px', fontSize: '9px' }}>Date Issued: {new Date().toLocaleDateString('en-US')}</div>
                             <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '9px' }}>
                               <div>_________________________</div>
                               <div style={{ marginTop: '2px' }}>Barangay Captain</div>

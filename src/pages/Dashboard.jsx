@@ -140,7 +140,7 @@ export default function Dashboard(){
                       </td>
 
                       <td>
-                        {r.date || '—'}
+                        {r.date ? new Date(r.date).toLocaleDateString('en-US') : '—'}
                       </td>
 
                       <td>

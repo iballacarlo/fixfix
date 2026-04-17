@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 export default function ComplaintForm(){
   const { user } = useAuth()
   const [form, setForm] = useState({
-    resident_name: user?.name || '',
+    resident_name: '',
     category: '',
     title: '',
     description: '',
@@ -23,6 +23,12 @@ export default function ComplaintForm(){
   })
 
   const [errors, setErrors] = useState({})
+
+  const formatMmDdYyyy = (value) => {
+    const date = new Date(value)
+    if(!value || Number.isNaN(date.getTime())) return ''
+    return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`
+  }
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [previews, setPreviews] = useState([]) // Store preview URLs
   const [expandedPreview, setExpandedPreview] = useState(null) // For expanded view
@@ -72,13 +78,14 @@ export default function ComplaintForm(){
     if(!form.category) e.category = 'Category required'
     if(!form.title) e.title = 'Title required'
     if(!form.description) e.description = 'Description required'
+    if(form.date && Number.isNaN(new Date(form.date).getTime())) e.date = 'Date must be valid'
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
   async function submitToApi(){
     try {
-      const residentName = form.resident_name || user?.name || ''
+      const residentName = form.resident_name || ''
 
       // Use mock API to ensure all data is stored properly
       const result = mockApi.addComplaint({
@@ -86,7 +93,7 @@ export default function ComplaintForm(){
         title: form.title,
         description: form.description,
         location: form.location,
-        date: form.date,
+        date: form.date ? formatMmDdYyyy(form.date) : '',
         anonymous: form.anonymous,
         images: form.images,
         resident_name: residentName
@@ -106,8 +113,6 @@ export default function ComplaintForm(){
         })
         if (form.resident_name) {
           formData.append('resident_name', form.resident_name)
-        } else if (user?.name) {
-          formData.append('resident_name', user.name)
         }
         await api.post('/complaints', formData, {
           headers: {
@@ -235,12 +240,12 @@ export default function ComplaintForm(){
               <label className="form-label">Date</label>
               <div className="form-field">
                 <input
-                  className="ui-input"
+                  className={`ui-input ${errors.date ? 'ui-error' : ''}`}
                   type="date"
                   value={form.date}
-                  max={new Date().toISOString().split('T')[0]}
                   onChange={e => setField('date', e.target.value)}
                 />
+                {errors.date && <div className="field-error">{errors.date}</div>}
               </div>
 
               {/* Upload */}
