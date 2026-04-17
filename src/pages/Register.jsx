@@ -6,15 +6,7 @@ import Button from '../components/Button'
 import { useSettings } from '../context/SettingsContext'
 import '../styles/login.css'
 import Logo from '../assets/Bacoor.png'
-
-// Address data mapping for Phase-Street combinations
-const addressData = {
-  'Parkdale 1': ['Sundale', 'Mondale', 'Tuesdale', 'Thursdale'],
-  'Parkdale 2': ['St. Joseph', 'St. Martin', 'St. Clement', 'St. Francis', 'St. Claire'],
-  'Phase 1': ['Gardeania', 'Sunflower', 'Marigold', 'Yellowbell', 'Primrose', 'Irish', 'Dahlia', 'Tulip', 'Daffodil', 'Baes', 'Begonia'],
-  'Phase 2': ['Mercury', 'Venus', 'Palomar', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'],
-  'Phase 3': ['Diamond', 'Jade', 'Emerald', 'Sapphire', 'Ruby']
-}
+import { addressData } from '../data/addressData'
 
 export default function Register(){
   const { register } = useAuth()

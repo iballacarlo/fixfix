@@ -6,6 +6,7 @@ import '../styles/form.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { addressData } from '../data/addressData'
 import { useNavigate } from 'react-router-dom'
 
 const DOC_TYPES = [
@@ -19,7 +20,10 @@ export default function DocumentRequest(){
   const [purpose, setPurpose] = useState('')
   const [name, setName] = useState('')
   const [birthdate, setBirthdate] = useState('')
-  const [address, setAddress] = useState('')
+  const [phase, setPhase] = useState('')
+  const [street, setStreet] = useState('')
+  const [block, setBlock] = useState('')
+  const [lot, setLot] = useState('')
 
   const formatMmDdYyyy = (value) => {
     const date = new Date(value)
@@ -37,7 +41,10 @@ export default function DocumentRequest(){
     if(!name.trim()) e.name = 'Name is required'
     if(!birthdate.trim()) e.birthdate = 'Birthdate is required'
     else if(Number.isNaN(new Date(birthdate).getTime())) e.birthdate = 'Birthdate must be valid'
-    if(!address.trim()) e.address = 'Address is required'
+    if(!phase.trim()) e.phase = 'Phase is required'
+    if(!street.trim()) e.street = 'Street is required'
+    if(!block.trim()) e.block = 'Block is required'
+    if(!lot.trim()) e.lot = 'Lot is required'
     if(!type) e.type = 'Document type is required'
     if(!purpose.trim()) e.purpose = 'Purpose is required'
     setErrors(e)
@@ -52,13 +59,14 @@ export default function DocumentRequest(){
   async function submitToApi(){
     try {
       // Use mock API to ensure all data is stored properly
+      const formattedAddress = `${phase}, ${street}, Block ${block}, Lot ${lot}`
       const result = mockApi.addDoc({
         userId: JSON.parse(localStorage.getItem('mock_current_user') || '{}')?.id,
         type: type,
         document_type: type,
         name,
         birthdate: birthdate ? formatMmDdYyyy(birthdate) : '',
-        address,
+        address: formattedAddress,
         purpose: purpose
       })
       
@@ -67,7 +75,7 @@ export default function DocumentRequest(){
         await api.post('/docs', {
           name,
           birthdate,
-          address,
+          address: formattedAddress,
           document_type: type,
           purpose
         })
@@ -96,7 +104,10 @@ export default function DocumentRequest(){
         setConfirmOpen(false)
         setName('')
         setBirthdate('')
-        setAddress('')
+        setPhase('')
+        setStreet('')
+        setBlock('')
+        setLot('')
         setPurpose('')
       } else {
         alert('Error: ' + res.data.message)
@@ -104,10 +115,6 @@ export default function DocumentRequest(){
     } catch(err){
       alert('Error submitting request: ' + (err.response?.data?.message || err.message))
     }
-  }
-
-  function handleScanQR(){
-    alert('QR scanning feature will be added soon.')
   }
 
   function openConfirm(e){
@@ -221,16 +228,67 @@ export default function DocumentRequest(){
               </div>
 
               <label className="form-label">
-                Address <span className="req">*</span>
+                Phase <span className="req">*</span>
+              </label>
+              <div className="form-field">
+                <select
+                  className={`ui-input ${errors.phase ? 'ui-error' : ''}`}
+                  value={phase}
+                  onChange={e => {
+                    setPhase(e.target.value)
+                    setStreet('')
+                  }}
+                >
+                  <option value="">Select Phase</option>
+                  {Object.keys(addressData).map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                {errors.phase && <div className="field-error">{errors.phase}</div>}
+              </div>
+
+              <label className="form-label">
+                Street <span className="req">*</span>
+              </label>
+              <div className="form-field">
+                <select
+                  className={`ui-input ${errors.street ? 'ui-error' : ''}`}
+                  value={street}
+                  onChange={e => setStreet(e.target.value)}
+                  disabled={!phase}
+                >
+                  <option value="">Select Street</option>
+                  {phase && addressData[phase].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {errors.street && <div className="field-error">{errors.street}</div>}
+              </div>
+
+              <label className="form-label">
+                Block <span className="req">*</span>
               </label>
               <div className="form-field">
                 <input
-                  className={`ui-input ${errors.address ? 'ui-error' : ''}`}
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  placeholder="Enter your complete address"
+                  className={`ui-input ${errors.block ? 'ui-error' : ''}`}
+                  value={block}
+                  onChange={e => setBlock(e.target.value)}
+                  placeholder="Block number"
                 />
-                {errors.address && <div className="field-error">{errors.address}</div>}
+                {errors.block && <div className="field-error">{errors.block}</div>}
+              </div>
+
+              <label className="form-label">
+                Lot <span className="req">*</span>
+              </label>
+              <div className="form-field">
+                <input
+                  className={`ui-input ${errors.lot ? 'ui-error' : ''}`}
+                  value={lot}
+                  onChange={e => setLot(e.target.value)}
+                  placeholder="Lot number"
+                />
+                {errors.lot && <div className="field-error">{errors.lot}</div>}
               </div>
 
               <label className="form-label">
@@ -269,9 +327,6 @@ export default function DocumentRequest(){
             </div>
 
             <div className="form-actions">
-              <Button type="button" variant="secondary" onClick={handleScanQR}>
-                Scan QR
-              </Button>
               <Button type="submit">Submit</Button>
             </div>
           </form>

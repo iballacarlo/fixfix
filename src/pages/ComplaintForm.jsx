@@ -21,7 +21,6 @@ export default function ComplaintForm(){
     anonymous: false,
     images: [], // Changed from image to images array
     respondent_name: '',
-    respondent_contact: '',
   })
 
   const [errors, setErrors] = useState({})
@@ -31,6 +30,9 @@ export default function ComplaintForm(){
     if(!value || Number.isNaN(date.getTime())) return ''
     return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`
   }
+  // Allow current date and past dates, prevent future dates
+  const today = new Date()
+  const maxComplaintDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [previews, setPreviews] = useState([]) // Store preview URLs
   const [expandedPreview, setExpandedPreview] = useState(null) // For expanded view
@@ -80,7 +82,20 @@ export default function ComplaintForm(){
     if(!form.category) e.category = 'Category required'
     if(!form.title) e.title = 'Title required'
     if(!form.description) e.description = 'Description required'
-    if(form.date && Number.isNaN(new Date(form.date).getTime())) e.date = 'Date must be valid'
+    if(!form.date) {
+      e.date = 'Date is required'
+    } else {
+      const selectedDate = new Date(form.date)
+      const today = new Date()
+      // Set to end of today to allow the current date
+      const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
+      
+      if(Number.isNaN(selectedDate.getTime())) {
+        e.date = 'Date must be valid'
+      } else if(selectedDate > endOfToday) {
+        e.date = 'Date cannot be in the future. Only current date and past dates are allowed.'
+      }
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -99,8 +114,7 @@ export default function ComplaintForm(){
         anonymous: form.anonymous,
         images: form.images,
         resident_name: residentName,
-        respondent_name: form.respondent_name,
-        respondent_contact: form.respondent_contact
+        respondent_name: form.respondent_name
       })
       
       // Also try to send to real backend for redundancy
@@ -229,19 +243,6 @@ export default function ComplaintForm(){
                 <div className="helper">Optional. Who is this complaint about? Leave blank for general/area-based complaints.</div>
               </div>
 
-              {/* Respondent Contact */}
-              <label className="form-label">
-                Respondent Contact (Optional)
-              </label>
-              <div className="form-field">
-                <InputField
-                  label={null}
-                  value={form.respondent_contact}
-                  onChange={e => setField('respondent_contact', e.target.value)}
-                  placeholder="Phone number or email (optional)"
-                />
-              </div>
-
               {/* Description */}
               <label className="form-label">
                 Description <span className="req">*</span>
@@ -273,6 +274,7 @@ export default function ComplaintForm(){
                 <input
                   className={`ui-input ${errors.date ? 'ui-error' : ''}`}
                   type="date"
+                  max={maxComplaintDate}
                   value={form.date}
                   onChange={e => setField('date', e.target.value)}
                 />
