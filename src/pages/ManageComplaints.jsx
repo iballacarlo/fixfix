@@ -1,35 +1,69 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
+import Button from '../components/Button'
 import '../styles/history.css'
 import mockApi from '../api/mockApi'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 
 export default function ManageComplaints(){
+  const location = useLocation()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedComplaint, setSelectedComplaint] = useState(null)
+  const [selectedForStatus, setSelectedForStatus] = useState(null)
+  const [highlightedComplaintId, setHighlightedComplaintId] = useState(null)
 
-  async function load(){
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try{
-      const data = mockApi.listComplaints()
-      setItems(data || [])
+      setItems(mockApi.listComplaints())
     }catch(err){
-      setError(err?.message || 'Failed to load')
+      setItems([])
+      if(err && err.message){
+        console.log('Failed to load local complaints:', err.message)
+      }
     }
 
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(()=>{ load() }, [])
+  useEffect(() => {
+    load()
+    const handleStorage = (e) => {
+      if(!e.key || e.key === 'mock_complaints' || e.key === 'mock_notifications' || e.key === 'complaint_sync'){
+        load()
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [load])
+
+  useEffect(() => {
+    const highlight = location.state?.highlightId
+    const type = location.state?.highlightType
+    if(type && String(type).toLowerCase() !== 'complaint') return
+    if(highlight != null){
+      const parsed = Number(highlight)
+      setHighlightedComplaintId(Number.isNaN(parsed) ? highlight : parsed)
+    }
+  }, [location.state])
+
+  useEffect(() => {
+    if(highlightedComplaintId == null) return
+    const row = document.getElementById(`complaint-row-${highlightedComplaintId}`)
+    if(row){
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlightedComplaintId, items])
 
   const statusOptions = ['Submitted', 'Pending', 'Resolved', 'Closed']
-
   async function handleUpdate(id, status){
     const item = items.find(i => i.complaint_id === id)
     if(!item) return
@@ -39,8 +73,27 @@ export default function ManageComplaints(){
     try{
       const result = mockApi.updateComplaintStatus(id, status)
       if(!result.success) throw new Error(result.message || 'Failed to update status')
+      try {
+        localStorage.setItem('complaint_sync', Date.now().toString())
+      } catch {}
       load()
     }catch(err){
+      alert('Update failed: ' + (err?.message || 'Unknown error'))
+    }
+  }
+
+  async function confirmChangeStatus(id, status){
+    try{
+      setSelectedForStatus(prev => ({ ...prev, loading: true }))
+      const result = mockApi.updateComplaintStatus(id, status)
+      if(!result.success) throw new Error(result.message || 'Failed to update status')
+      try {
+        localStorage.setItem('complaint_sync', Date.now().toString())
+      } catch {}
+      setSelectedForStatus(null)
+      load()
+    }catch(err){
+      setSelectedForStatus(prev => ({ ...prev, loading: false }))
       alert('Update failed: ' + (err?.message || 'Unknown error'))
     }
   }
@@ -52,6 +105,9 @@ export default function ManageComplaints(){
   const closeModal = () => {
     setSelectedComplaint(null)
   }
+
+  useCloseOnEscape(Boolean(selectedComplaint), closeModal)
+  useCloseOnEscape(Boolean(selectedForStatus), () => setSelectedForStatus(null))
 
   const wrapText = (text, maxChars = 72) => {
     return String(text || '').split('\n').flatMap(line => {
@@ -601,7 +657,11 @@ export default function ManageComplaints(){
 
                 <tbody>
                   {items.map(it => (
-                    <tr key={it.complaint_id}>
+                    <tr
+                      key={it.complaint_id}
+                      id={`complaint-row-${it.complaint_id}`}
+                      className={highlightedComplaintId === it.complaint_id ? 'table-row-highlighted' : ''}
+                    >
                       <td>{it.complaint_id}</td>
                       <td>{it.title || it.description?.slice(0,60) || '—'}</td>
                       <td>{it.resident_name || it.name || it.resident_id || '—'}</td>
@@ -619,18 +679,12 @@ export default function ManageComplaints(){
                       </td>
                       <td>
                         <div className="table-actions-inline" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <select
-                            className="ui-input"
-                            value={it.status || 'Submitted'}
-                            onChange={(e) => handleUpdate(it.complaint_id, e.target.value)}
-                            style={{ height: '36px', fontSize: '0.9rem', maxWidth: '140px' }}
+                          <Button
+                            variant="secondary"
+                            onClick={() => setSelectedForStatus({ id: it.complaint_id, current: it.status || 'Submitted' })}
                           >
-                            {statusOptions.map(option => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
+                            Change Status
+                          </Button>
                           <button
                             type="button"
                             className="table-action"
@@ -719,6 +773,34 @@ export default function ManageComplaints(){
                 </div>
               </div>
             )}
+
+              {selectedForStatus && (
+                <div className="modal-overlay" onClick={() => setSelectedForStatus(null)}>
+                  <div className="modal-card" onClick={e => e.stopPropagation()}>
+                    <h3>Change Complaint Status</h3>
+                    <div style={{ marginTop: 8 }}>
+                      <label style={{ fontWeight: 800, display: 'block', marginBottom: 8 }}>Choose status</label>
+                      <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                        {statusOptions.map(opt => (
+                          <Button
+                            key={opt}
+                            type="button"
+                            variant={selectedForStatus.current === opt ? 'primary' : 'secondary'}
+                            onClick={() => confirmChangeStatus(selectedForStatus.id, opt)}
+                            disabled={selectedForStatus.loading}
+                          >
+                            {selectedForStatus.loading ? 'Updating...' : opt}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+                      <Button type="button" variant="secondary" onClick={() => setSelectedForStatus(null)} disabled={selectedForStatus.loading}>Close</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 

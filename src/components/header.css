@@ -86,6 +86,223 @@
   box-shadow: 0 0 0 4px var(--primary-soft);
 }
 
+.notification-wrap{
+  position: relative;
+}
+
+.notification-btn{
+  width:44px;
+  height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  border:1px solid var(--border-color);
+  background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+  color: var(--text-color);
+  cursor:pointer;
+  position:relative;
+}
+
+.avatar-badge{
+  display: none;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger-color);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-notifications{
+  display: none;
+}
+
+.notification-btn:hover{
+  background: var(--surface-2);
+}
+
+.notification-badge{
+  position:absolute;
+  top:10px;
+  right:10px;
+  min-width:16px;
+  height:16px;
+  padding:0 5px;
+  border-radius:999px;
+  background: var(--danger-color);
+  color: white;
+  font-size:0.75rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.notification-modal{
+  position:absolute;
+  right:0;
+  top:52px;
+  width:280px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(80vh - 20px);
+  border-radius:14px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border:1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  z-index: 50;
+}
+
+.notification-modal-header{
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-weight:900;
+  color: var(--text-color);
+  border-bottom:1px solid var(--border-color);
+  flex: 0 0 auto;
+}
+
+.notification-modal-content{
+  padding:12px 14px;
+  color: var(--text-color);
+  min-height:120px;
+  overflow-y:auto;
+  flex: 1 1 auto;
+}
+
+.mark-all-read-btn{
+  border:1px solid var(--border-color);
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  color: var(--text-color);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mark-all-read-btn{
+  border:1px solid var(--border-color);
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  color: var(--text-color);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+html.dark .mark-all-read-btn{
+  border-color: rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
+}
+
+.mark-all-read-btn:hover{
+  background: var(--surface-2);
+}
+
+.mark-all-read-btn:disabled{
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.notification-modal-header .mark-all-read-btn{
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.notification-modal-content{
+  padding:12px 14px;
+  color: var(--text-color);
+  min-height:120px;
+}
+
+button.notification-item,
+.notification-item.clickable{
+  width: 100%;
+  display: block;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-color);
+}
+
+.notification-item.clickable:hover{
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+}
+
+.notification-empty{
+  color: var(--muted-color);
+  font-size:0.95rem;
+  line-height:1.5;
+}
+
+.notification-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.notification-item{
+  padding:12px;
+  border-radius:12px;
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  border:1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.notification-item.unread{
+  border-color: var(--danger-color);
+  background: color-mix(in srgb, var(--surface-2) 95%, transparent);
+}
+
+html.dark .notification-item{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  color: var(--text-color);
+}
+
+html.dark .notification-item .notification-message,
+html.dark .notification-item .notification-meta{
+  color: var(--text-color);
+}
+
+html.dark .notification-item.unread{
+  background: rgba(59,130,246,0.18);
+  border-color: rgba(59,130,246,0.28);
+}
+
+html.dark .notification-item.clickable:hover{
+  background: rgba(255,255,255,0.08);
+}
+
+.notification-message{
+  margin-bottom:4px;
+  font-size:0.95rem;
+}
+
+.notification-meta{
+  font-size:0.8rem;
+  color: var(--muted-color);
+}
+
 /* =========================
    Avatar dropdown
 ========================= */
@@ -130,6 +347,7 @@
   top:52px;
 
   width:260px;
+  max-width: calc(100vw - 20px);
   border-radius:14px;
   overflow:hidden;
 
@@ -138,6 +356,7 @@
 
   border:1px solid var(--border-color);
   box-shadow: var(--shadow);
+  z-index: 50;
 }
 
 .avatar-menu-head{
@@ -149,6 +368,8 @@
   font-weight:900;
   color: var(--text-color);
   line-height:1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .avatar-menu-email{
@@ -183,7 +404,182 @@
   background: var(--danger-soft);
 }
 
+.avatar-item.mobile-only,
+.settings-btn.mobile-only{
+  display: none;
+}
+
+.mobile-settings-wrapper{
+  position: relative;
+}
+
 /* responsive */
+@media(max-width:700px){
+  .top-left{
+    min-width: 0;
+    max-width: 55%;
+    flex: 0 1 auto;
+  }
+
+  .barangay-name{
+    font-size: 0.75rem;
+    font-weight: 900;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+
+  .header-sub{
+    display: none;
+  }
+
+  .top-right{
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
+  .header-controls{
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .header-controls .small{
+    padding: 0 10px;
+    font-size: 0.8rem;
+    height: 36px;
+  }
+
+  .settings-btn.mobile-only{
+    display: inline-flex;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+    color: var(--text-color);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .settings-btn.mobile-only:hover{
+    background: var(--surface-2);
+  }
+
+  .notification-wrap{
+    display: none;
+  }
+
+  .avatar-badge{
+    display: flex;
+  }
+
+  .mobile-notifications{
+    display: block;
+    padding: 0 0 10px;
+  }
+
+  .avatar-menu{
+    width: min(78vw, 280px);
+    right: 10px;
+    max-height: calc(100vh - 90px);
+    height: min(62vh, 460px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-notifications{
+    display: block;
+    padding: 0 0 10px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    max-height: calc(100vh - 220px);
+    height: min(46vh, 320px);
+  }
+
+  .mobile-notifications .notification-modal-header{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .avatar-item{
+    flex: 0 0 auto;
+  }
+
+  .avatar-menu-head{
+    flex: 0 0 auto;
+  }
+
+  .settings-gear{
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--primary-color);
+  }
+
+  .top-header{
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-mini-w);
+    width: calc(100vw - var(--sidebar-mini-w));
+    z-index: 30;
+  }
+
+  .main-area{
+    padding-top: var(--layout-header-h);
+  }
+
+  .settings-text{
+    line-height: 1;
+  }
+
+  .settings-dropdown{
+    position: absolute;
+    top: 46px;
+    right: 0;
+    width: 220px;
+    border-radius: 14px;
+    padding: 8px;
+    background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .settings-item{
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 900;
+    color: var(--text-color);
+  }
+
+  .settings-item:hover{
+    background: var(--surface-2);
+  }
+
+  .avatar-item.mobile-only{
+    display: block;
+  }
+}
+
 @media(max-width:600px){
   .barangay-name{ font-size:0.95rem; }
   .header-controls .small{ padding:0 12px; }

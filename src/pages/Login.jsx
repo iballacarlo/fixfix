@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import InputField from '../components/InputField'
 import Button from '../components/Button'
 import { useSettings } from '../context/SettingsContext'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import '../styles/login.css'
 import Logo from '../assets/Bacoor.png'
 
@@ -17,12 +18,18 @@ export default function Login(){
     fontSize, setFontSize
   } = useSettings()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem('remember_email') || '')
+  const [password, setPassword] = useState(() => localStorage.getItem('remember_password') || '')
+  const [rememberMe, setRememberMe] = useState(() => Boolean(localStorage.getItem('remember_email') || localStorage.getItem('remember_password')))
   const [errors, setErrors] = useState({})
+  const [blockedLogin, setBlockedLogin] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const panelRef = useRef(null)
+
+  useCloseOnEscape(Boolean(blockedLogin), () => setBlockedLogin(null))
+
+  const passwordAutoComplete = rememberMe ? 'current-password' : 'new-password'
 
   function validate(){
     const e = {}
@@ -38,14 +45,29 @@ export default function Login(){
     e.preventDefault()
     if(!validate()) return
 
-    const res = await login(email, password)
+    const res = await login(email, password, rememberMe)
 
     if(res.ok){
+      if(rememberMe){
+        localStorage.setItem('remember_email', email.trim())
+        localStorage.setItem('remember_password', password)
+      } else {
+        localStorage.removeItem('remember_email')
+        localStorage.removeItem('remember_password')
+      }
+
       const role = res.role || (await (await fetch('/me')).json())?.role
       if(role === 'staff' || role === 'admin') navigate('/admin')
       else navigate('/dashboard')
     } else {
-      setErrors({ form: res.message || 'Login failed.' })
+      const status = String(res.status || '').toLowerCase()
+      const fallbackStatus = !status && /banned/i.test(res.message || '') ? 'banned' : !status && /suspended/i.test(res.message || '') ? 'suspended' : status
+      if(fallbackStatus === 'suspended' || fallbackStatus === 'banned'){
+        setBlockedLogin({ status: fallbackStatus, message: res.message, suspensionEnd: res.suspensionEnd })
+        setErrors({})
+      } else {
+        setErrors({ form: res.message || 'Login failed.' })
+      }
     }
   }
 
@@ -141,6 +163,7 @@ export default function Login(){
                 <label className="switch">
                   <input
                     type="checkbox"
+                    aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
                     checked={contrast}
                     onChange={(e) => setContrast(e.target.checked)}
                   />
@@ -157,6 +180,7 @@ export default function Login(){
                 <label className="switch">
                   <input
                     type="checkbox"
+                    aria-label={dark ? 'Disable dark mode' : 'Enable dark mode'}
                     checked={dark}
                     onChange={(e) => setDark(e.target.checked)}
                   />
@@ -224,7 +248,7 @@ export default function Login(){
           <form className="login-card" onSubmit={handleLogin} aria-labelledby="loginTitle" noValidate>
             <div className="login-body">
               <div className="card-head">
-                <h2 id="loginTitle" className="card-title">Welcome back</h2>
+                <h2 id="loginTitle" className="card-title">Welcome</h2>
                 <p className="card-sub">Sign in to continue to your account.</p>
               </div>
 
@@ -235,7 +259,7 @@ export default function Login(){
                 onChange={e => setEmail(e.target.value)}
                 error={errors.email}
                 placeholder="Enter your email"
-                autoComplete="email"
+                autoComplete="username"
               />
 
               <InputField
@@ -246,12 +270,16 @@ export default function Login(){
                 error={errors.password}
                 allowToggle
                 placeholder="Enter your password"
-                autoComplete="current-password"
+                autoComplete={passwordAutoComplete}
               />
 
               <div className="login-row">
                 <label className="remember">
-                  <input type="checkbox" />
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                  />
                   <span>Remember me</span>
                 </label>
 
@@ -271,6 +299,25 @@ export default function Login(){
               </p>
             </div>
           </form>
+
+          {blockedLogin && (
+            <div className="modal-overlay" onClick={() => setBlockedLogin(null)}>
+              <div className="modal-card" onClick={e => e.stopPropagation()}>
+                <h3>{blockedLogin.status === 'banned' ? 'Account Banned' : 'Account Suspended'}</h3>
+                <p>{blockedLogin.message}</p>
+                {blockedLogin.suspensionEnd && blockedLogin.status === 'suspended' && (
+                  <p style={{ marginTop: 8 }}>
+                    Suspension until {new Date(blockedLogin.suspensionEnd).toLocaleDateString('en-US')}.
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+                  <Button type="button" variant="secondary" onClick={() => setBlockedLogin(null)}>
+                    OK
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>

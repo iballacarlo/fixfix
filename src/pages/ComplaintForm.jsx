@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import InputField from '../components/InputField'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import '../styles/form.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
@@ -11,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function ComplaintForm(){
   const { user } = useAuth()
+  const [categories, setCategories] = useState([])
   const [form, setForm] = useState({
     resident_name: '',
     category: '',
@@ -37,7 +39,14 @@ export default function ComplaintForm(){
   const [previews, setPreviews] = useState([]) // Store preview URLs
   const [expandedPreview, setExpandedPreview] = useState(null) // For expanded view
 
+  useCloseOnEscape(Boolean(expandedPreview), () => setExpandedPreview(null))
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
+
   const nav = useNavigate()
+
+  useEffect(() => {
+    setCategories(mockApi.listCategories())
+  }, [])
 
   function setField(key, value){
     setForm(prev => ({ ...prev, [key]: value }))
@@ -66,6 +75,20 @@ export default function ComplaintForm(){
     setPreviews([...previews, ...newPreviews])
     // Reset the input so the same file can be selected again if needed
     e.target.value = ''
+  }
+
+  function handleFileUploadKeyDown(e){
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault()
+      e.currentTarget.click()
+    }
+  }
+
+  function handlePreviewKeyDown(e, preview){
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault()
+      setExpandedPreview(preview)
+    }
   }
 
   function removeFile(index){
@@ -114,29 +137,23 @@ export default function ComplaintForm(){
         anonymous: form.anonymous,
         images: form.images,
         resident_name: residentName,
-        respondent_name: form.respondent_name
+        respondent_name: form.respondent_name,
+        userId: user?.id
       })
       
       // Also try to send to real backend for redundancy
       try {
-        const formData = new FormData()
-        Object.keys(form).forEach(key => {
-          if (key === 'images') {
-            form.images.forEach((file, index) => {
-              formData.append(`images[${index}]`, file)
-            })
-          } else {
-            formData.append(key, form[key])
-          }
-        })
-        if (form.resident_name) {
-          formData.append('resident_name', form.resident_name)
+        const payload = {
+          category_id: form.category,
+          title: form.title,
+          description: form.description,
+          incident_location: form.location,
+          incident_date: form.date ? formatMmDdYyyy(form.date) : '',
+          anonymous: form.anonymous,
+          respondent_name: form.respondent_name,
+          resident_name: residentName
         }
-        await api.post('/complaints', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
+        await api.post('/complaints', payload)
       } catch(err) {
         console.log('Real API unavailable, but complaint saved to local storage')
       }
@@ -195,9 +212,13 @@ export default function ComplaintForm(){
                   onChange={e => setField('category', e.target.value)}
                 >
                   <option value="">Select Category</option>
-                  <option value="Noise">Noise</option>
-                  <option value="Garbage">Garbage</option>
-                  <option value="Traffic">Traffic</option>
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))
+                  ) : (
+                    <option value="">No categories available</option>
+                  )}
                 </select>
                 {errors.category && <div className="field-error">{errors.category}</div>}
               </div>
@@ -293,7 +314,14 @@ export default function ComplaintForm(){
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                   />
-                  <label htmlFor="file-upload" className="file-upload-btn-small">
+                  <label
+                    htmlFor="file-upload"
+                    className="file-upload-btn-small"
+                    tabIndex={0}
+                    role="button"
+                    aria-label="Choose images or videos to upload"
+                    onKeyDown={handleFileUploadKeyDown}
+                  >
                     <span className="upload-icon">📎</span>
                     <span className="upload-text-small">Choose</span>
                   </label>
@@ -306,7 +334,11 @@ export default function ComplaintForm(){
                           <div 
                             className="preview-thumbnail"
                             onClick={() => setExpandedPreview(preview)}
+                            onKeyDown={(e) => handlePreviewKeyDown(e, preview)}
+                            tabIndex={0}
+                            role="button"
                             title="Click to expand"
+                            aria-label="Open file preview"
                           >
                             {preview.type.startsWith('image/') ? (
                               <img src={preview.url} alt={`Preview ${index}`} />

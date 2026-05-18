@@ -16,8 +16,8 @@
   border-radius: 18px;
   box-shadow: var(--shadow, 0 18px 45px rgba(16, 24, 40, 0.12));
   padding: 14px 16px;
-  max-height: calc(120vh - 170px);
-  overflow: hidden;
+  max-height: calc(100vh - 150px);
+  overflow: auto;
   display: flex;
   flex-direction: column;
 }
@@ -75,7 +75,7 @@
   gap: 8px 14px;
   align-items:start;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Labels */
@@ -374,6 +374,16 @@
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
 }
 
+.file-upload-btn-small:focus-visible,
+.preview-thumbnail:focus-visible,
+.type-chip:focus-visible,
+.font-chip:focus-visible,
+.avatar-btn:focus-visible,
+.btn:focus-visible{
+  outline: 3px solid rgba(37, 99, 235, 0.75);
+  outline-offset: 2px;
+}
+
 .upload-icon{
   font-size: 1.2rem;
   opacity: 0.7;
@@ -567,6 +577,117 @@ html.dark .type-chip.active{
   color: rgb(96, 165, 250);
   border-color: rgba(96, 165, 250, 0.28);
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+}
+
+html.dark .ui-input{
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+html.dark .ui-input:focus{
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+}
+
+html.dark .ui-textarea{
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder{
+  color: rgba(226, 232, 240, 0.65);
+  opacity: 1;
+}
+
+html.dark .ui-readonly{
+  background: rgba(30, 41, 59, 0.85);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+html.dark .file-upload-btn-small{
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text);
+}
+
+html.dark .file-upload-btn-small:hover{
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(96, 165, 250, 0.08);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+}
+
+html.dark .upload-icon{
+  opacity: 0.8;
+}
+
+html.high-contrast .type-chips {
+  background: #111;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+html.high-contrast .type-chip {
+  background: #111;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+/* Remove button inside category chips - ensure visible in all themes */
+.type-chip > button{
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-weight: 900;
+  opacity: 0.9;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.type-chip > button:hover{
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+html.dark .type-chip > button{
+  color: rgba(226, 232, 240, 0.95);
+}
+
+html.high-contrast .type-chip > button{
+  color: #ffffff;
+  opacity: 1;
+}
+
+html.high-contrast .type-chip:hover,
+html.high-contrast .type-chip:focus-visible {
+  background: #222;
+  border-color: #00b4ff;
+  color: #fff;
+}
+
+html.high-contrast .type-chip.active {
+  background: #001e3c;
+  color: #ffd60a;
+  border-color: #ffd60a;
+  box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.35);
+}
+
+html.high-contrast .file-upload-btn-small {
+  background: #111;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+html.high-contrast .file-upload-btn-small:hover,
+html.high-contrast .file-upload-btn-small:focus-visible {
+  background: #222;
+  border-color: #ffd60a;
+  box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.55);
+  color: #fff;
 }
 
 /* Actions row */
@@ -767,9 +888,18 @@ html.dark .setting-row{
 }
 
 .switch input{
+  position:absolute;
+  inset:0;
   opacity:0;
-  width:0;
-  height:0;
+  width:100%;
+  height:100%;
+  margin:0;
+  cursor:pointer;
+}
+
+.switch input:focus-visible + .slider{
+  outline: 3px solid rgba(37, 99, 235, 0.9);
+  outline-offset: 3px;
 }
 
 .slider{
@@ -832,7 +962,24 @@ html.dark .setting-row{
 html.dark .font-chip{
   background: rgba(15,23,42,0.65);
   border-color: rgba(255,255,255,0.12);
-}/* A4 Document Preview Styles */
+  color: var(--text);
+}
+
+html.dark .font-chip.active{
+  color: rgb(96, 165, 250);
+}
+
+.form-notice{
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* A4 Document Preview Styles */
 .process-modal-grid-single{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -847,6 +994,32 @@ html.dark .font-chip{
   align-items: flex-start;
 }
 
+@media (max-width: 900px) and (orientation: portrait) {
+  .process-modal-grid-single{
+    grid-template-columns: 1fr;
+  }
+
+  .document-preview-shell-a4,
+  .document-edit-sidebar{
+    width: 100%;
+  }
+
+  .document-preview-a4{
+    max-width: 100%;
+    background-size: 220px auto;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .process-modal-grid-single{
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .document-preview-a4{
+    max-width: 100%;
+  }
+}
+
 .document-preview-a4{
   width: 100%;
   max-width: 380px;
@@ -856,6 +1029,7 @@ html.dark .font-chip{
   border-radius: 10px;
   background: #ffffff url('/src/assets/Bacoor.png') center center no-repeat;
   background-size: 350px auto;
+  background-blend-mode: normal;
   border: 2px solid rgb(200, 200, 200);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -868,6 +1042,22 @@ html.dark .font-chip{
   position: relative;
 }
 
+.document-preview-a4 *{
+  color: #111827 !important;
+}
+
+html.dark .document-preview-a4,
+html.high-contrast .document-preview-a4{
+  background: #ffffff url('/src/assets/Bacoor.png') center center no-repeat !important;
+  background-size: 350px auto !important;
+  border-color: #999999 !important;
+}
+
+html.dark .document-preview-a4 *,
+html.high-contrast .document-preview-a4 *{
+  color: #111827 !important;
+}
+
 .document-preview-a4::before{
   content: '';
   position: absolute;
@@ -875,9 +1065,35 @@ html.dark .font-chip{
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.72);
   pointer-events: none;
   z-index: 1;
+}
+
+html.dark .document-preview-a4::before,
+html.high-contrast .document-preview-a4::before{
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+html.dark .sidebar-card,
+html.high-contrast .sidebar-card{
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(0,0,0,0.15) !important;
+}
+
+html.dark .sidebar-title,
+html.high-contrast .sidebar-title{
+  color: #111827 !important;
+}
+
+html.dark .document-edit-sidebar .form-label,
+html.high-contrast .document-edit-sidebar .form-label{
+  color: #000 !important;
+}
+
+html.dark .form-label,
+html.high-contrast .form-label{
+  color: #f9fafb !important;
 }
 
 .document-edit-sidebar{
@@ -903,4 +1119,70 @@ html.dark .font-chip{
   padding-top: 16px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: 12px;
+}
+
+/* =========================
+   Date Input Dark Mode & High Contrast
+========================= */
+
+/* Dark Mode - Date Input */
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark input[type="datetime-local"]{
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.65);
+}
+
+/* Dark Mode - Date Input Calendar Icon */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter: invert(1) brightness(1.2);
+  cursor: pointer;
+}
+
+/* Dark Mode - Date Input Placeholder */
+html.dark input[type="date"]::placeholder{
+  color: rgba(226, 232, 240, 0.65);
+}
+
+/* High Contrast Mode - Date Input */
+html.high-contrast input[type="date"],
+html.high-contrast input[type="time"],
+html.high-contrast input[type="datetime-local"]{
+  color: #ffffff;
+  background: #111;
+  border: 2px solid #ffffff;
+}
+
+/* High Contrast Mode - Date Input Calendar Icon */
+html.high-contrast input[type="date"]::-webkit-calendar-picker-indicator,
+html.high-contrast input[type="time"]::-webkit-calendar-picker-indicator,
+html.high-contrast input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter: invert(1) brightness(1.5);
+  cursor: pointer;
+}
+
+/* High Contrast Mode - Date Input Focus */
+html.high-contrast input[type="date"]:focus,
+html.high-contrast input[type="time"]:focus,
+html.high-contrast input[type="datetime-local"]:focus{
+  outline: 3px solid #ffd60a;
+  outline-offset: 2px;
+}
+
+/* Firefox support for date inputs in dark mode */
+html.dark input[type="date"]::-moz-calendar-picker-indicator,
+html.dark input[type="time"]::-moz-calendar-picker-indicator,
+html.dark input[type="datetime-local"]::-moz-calendar-picker-indicator{
+  filter: invert(1) brightness(1.2);
+  cursor: pointer;
+}
+
+/* Firefox support for date inputs in high contrast */
+html.high-contrast input[type="date"]::-moz-calendar-picker-indicator,
+html.high-contrast input[type="time"]::-moz-calendar-picker-indicator,
+html.high-contrast input[type="datetime-local"]::-moz-calendar-picker-indicator{
+  filter: invert(1) brightness(1.5);
+  cursor: pointer;
 }

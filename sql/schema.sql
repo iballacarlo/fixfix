@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS Resident (
   email VARCHAR(255) UNIQUE,
   password VARCHAR(255),
   account_status VARCHAR(50) DEFAULT 'Pending',
+  suspension_end_date DATE DEFAULT NULL,
   registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
   api_token VARCHAR(255)
 );

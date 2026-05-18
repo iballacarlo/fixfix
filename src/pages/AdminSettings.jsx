@@ -1,29 +1,45 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import '../styles/form.css'
-import { Settings, Tags, Save, RotateCcw } from 'lucide-react'
+import { Settings, Tags, Save, RotateCcw, Accessibility } from 'lucide-react'
+import { useSettings } from '../context/SettingsContext'
+import mockApi from '../api/mockApi'
 
-const ALL_DOCUMENT_TYPES = [
-  'Barangay Clearance',
-  'Certificate of Residency',
-  'Certificate of Indigency'
-]
-const STORAGE_DOCUMENT_TYPES_KEY = 'admin_disabled_document_types'
+const DEFAULT_CATEGORIES = ['Noise', 'Garbage', 'Traffic', 'Water Supply', 'Electricity', 'Public Safety', 'Other']
+const DEFAULT_SYSTEM_NAME = 'Barangay Service & Complaint Management System'
+const DEFAULT_CONTACT_EMAIL = 'brgy.mambog.ii@gmail.com'
 
 export default function AdminSettings(){
-  const [categories, setCategories] = useState(['Noise', 'Garbage', 'Traffic'])
+  const {
+    dark, setDark,
+    contrast, setContrast,
+    fontSize, setFontSize,
+    tts, setTts,
+    screenReader, setScreenReader,
+    saveSettings,
+    resetSettings
+  } = useSettings()
+
+  const [categories, setCategories] = useState([])
   const [newCat, setNewCat] = useState('')
-  const [systemName, setSystemName] = useState('City of Bacoor')
-  const [contactEmail, setContactEmail] = useState('admin@bacoor.gov.ph')
-  const [disabledDocumentTypes, setDisabledDocumentTypes] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_DOCUMENT_TYPES_KEY) || '{}')
-    } catch {
-      return {}
-    }
-  })
+  const [systemName, setSystemName] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    setCategories(mockApi.listCategories())
+    const config = mockApi.getSystemSettings()
+    setSystemName(config.systemName || DEFAULT_SYSTEM_NAME)
+    setContactEmail(config.contactEmail || DEFAULT_CONTACT_EMAIL)
+  }, [])
+
+  useEffect(() => {
+    if(!notice) return
+    const timer = setTimeout(() => setNotice(''), 4000)
+    return () => clearTimeout(timer)
+  }, [notice])
 
   function addCategory(){
     const v = newCat.trim()
@@ -38,26 +54,27 @@ export default function AdminSettings(){
   }
 
   function resetDefaults(){
-    setCategories(['Noise', 'Garbage', 'Traffic'])
+    setCategories(DEFAULT_CATEGORIES)
     setNewCat('')
-    setSystemName('City of Bacoor')
-    setContactEmail('admin@bacoor.gov.ph')
-    setDisabledDocumentTypes({})
-    localStorage.removeItem(STORAGE_DOCUMENT_TYPES_KEY)
-  }
-
-  function toggleDocumentType(type){
-    setDisabledDocumentTypes(prev => {
-      const next = { ...prev, [type]: !prev[type] }
-      if(!next[type]) delete next[type]
-      localStorage.setItem(STORAGE_DOCUMENT_TYPES_KEY, JSON.stringify(next))
-      return next
+    setSystemName(DEFAULT_SYSTEM_NAME)
+    setContactEmail(DEFAULT_CONTACT_EMAIL)
+    resetSettings()
+    mockApi.saveCategories(DEFAULT_CATEGORIES)
+    mockApi.saveSystemSettings({
+      systemName: DEFAULT_SYSTEM_NAME,
+      contactEmail: DEFAULT_CONTACT_EMAIL
     })
+    setNotice('System and accessibility settings reset to default.')
   }
 
   function save(){
-    localStorage.setItem(STORAGE_DOCUMENT_TYPES_KEY, JSON.stringify(disabledDocumentTypes))
-    alert('Settings saved (demo).')
+    mockApi.saveCategories(categories)
+    mockApi.saveSystemSettings({
+      systemName,
+      contactEmail
+    })
+    saveSettings()
+    setNotice('System and accessibility settings saved.')
   }
 
   return (
@@ -161,27 +178,13 @@ export default function AdminSettings(){
                   </Button>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: 12,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 10
-                  }}
-                >
+                <div className="type-chips" style={{ marginTop: 12 }}>
                   {categories.map((c, idx) => (
                     <div
                       key={c + idx}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        fontWeight: 900,
-                        border: '1px solid rgba(0,0,0,0.10)',
-                        background: 'rgba(255,255,255,0.65)'
-                      }}
+                      className="type-chip"
+                      role="group"
+                      aria-label={`Category ${c}`}
                     >
                       <span>{c}</span>
                       <button
@@ -203,41 +206,104 @@ export default function AdminSettings(){
                 </div>
 
                 <div className="helper" style={{ marginTop: 10 }}>
-                  These categories will appear in the complaint form.
-                </div>
-              </div>
-
-              <label className="form-label">Document Visibility</label>
-              <div className="form-field">
-                {ALL_DOCUMENT_TYPES.map((docType) => (
-                  <div
-                    key={docType}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      padding: '10px 12px',
-                      borderRadius: 12,
-                      border: '1px solid rgba(0,0,0,0.10)',
-                      background: 'rgba(255,255,255,0.65)'
-                    }}
-                  >
-                    <span>{docType}</span>
-                    <Button
-                      type="button"
-                      variant={disabledDocumentTypes[docType] ? 'secondary' : 'primary'}
-                      onClick={() => toggleDocumentType(docType)}
-                    >
-                      {disabledDocumentTypes[docType] ? 'Enable' : 'Disable'}
-                    </Button>
-                  </div>
-                ))}
-                <div className="helper" style={{ marginTop: 10 }}>
-                  Disabled document types are hidden from resident document requests.
+                  These categories will appear in the complaint form across all resident devices.
                 </div>
               </div>
             </div>
+
+            <div className="form-head" style={{ marginTop: 32 }}>
+              <h2
+                className="form-title"
+                style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}
+              >
+                <Accessibility size={18} strokeWidth={2} />
+                Accessibility Settings
+              </h2>
+
+              <p className="form-sub">
+                Control dark mode, contrast, font size, and assistive features from the same admin settings page.
+              </p>
+            </div>
+
+            <div className="settings-grid">
+              <div className="setting-row">
+                <div className="setting-info">
+                  <div className="setting-title">Dark Mode</div>
+                  <div className="setting-desc">Switch to darker interface colors.</div>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={dark}
+                    onChange={(e) => setDark(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="setting-row">
+                <div className="setting-info">
+                  <div className="setting-title">High Contrast</div>
+                  <div className="setting-desc">Increase contrast for better readability.</div>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={contrast}
+                    onChange={(e) => setContrast(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="setting-row">
+                <div className="setting-info">
+                  <div className="setting-title">Text-to-Speech</div>
+                  <div className="setting-desc">Enable spoken feedback.</div>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={tts}
+                    onChange={(e) => setTts(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="setting-row">
+                <div className="setting-info">
+                  <div className="setting-title">Screen Reader Mode</div>
+                  <div className="setting-desc">Optimize layout for screen readers.</div>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={screenReader}
+                    onChange={(e) => setScreenReader(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="font-size-section">
+                <div className="setting-title">Font Size</div>
+                <div className="font-size-options">
+                  {['small','medium','large','xlarge'].map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      className={`font-chip ${fontSize === size ? 'active' : ''}`}
+                      onClick={() => setFontSize(size)}
+                    >
+                      {size.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {notice && <div className="form-notice">{notice}</div>}
 
             <div className="form-actions">
               <Button type="button" variant="secondary" onClick={resetDefaults}>

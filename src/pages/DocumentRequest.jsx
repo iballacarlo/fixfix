@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import '../styles/form.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
+import { useAuth } from '../context/AuthContext'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import { addressData } from '../data/addressData'
 import { useNavigate } from 'react-router-dom'
@@ -14,7 +16,6 @@ const DOC_TYPES = [
   'Certificate of Residency',
   'Certificate of Indigency',
 ]
-const STORAGE_DOCUMENT_TYPES_KEY = 'admin_disabled_document_types'
 
 export default function DocumentRequest(){
   const [type, setType] = useState('Barangay Clearance')
@@ -25,25 +26,6 @@ export default function DocumentRequest(){
   const [street, setStreet] = useState('')
   const [block, setBlock] = useState('')
   const [lot, setLot] = useState('')
-  const [disabledDocumentTypes, setDisabledDocumentTypes] = useState({})
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_DOCUMENT_TYPES_KEY)
-      const parsed = stored ? JSON.parse(stored) : {}
-      setDisabledDocumentTypes(parsed)
-      const allowedDocTypes = DOC_TYPES.filter(docType => !parsed[docType])
-      if(allowedDocTypes.length > 0){
-        if(!allowedDocTypes.includes(type)){
-          setType(allowedDocTypes[0])
-        }
-      } else {
-        setType('')
-      }
-    } catch {
-      setDisabledDocumentTypes({})
-    }
-  }, [])
 
   const formatMmDdYyyy = (value) => {
     const date = new Date(value)
@@ -54,7 +36,10 @@ export default function DocumentRequest(){
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submittedRequest, setSubmittedRequest] = useState(null)
 
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
+
   const nav = useNavigate()
+  const { user } = useAuth()
 
   function validate(){
     const e = {}
@@ -76,14 +61,12 @@ export default function DocumentRequest(){
     setErrors(prev => ({ ...prev, type: undefined, businessName: undefined }))
   }
 
-  const availableDocTypes = DOC_TYPES.filter(docType => !disabledDocumentTypes[docType])
-
   async function submitToApi(){
     try {
       // Use mock API to ensure all data is stored properly
       const formattedAddress = `${phase}, ${street}, Block ${block}, Lot ${lot}`
       const result = mockApi.addDoc({
-        userId: JSON.parse(localStorage.getItem('mock_current_user') || '{}')?.id,
+        userId: user?.id,
         type: type,
         document_type: type,
         name,
@@ -131,6 +114,7 @@ export default function DocumentRequest(){
         setBlock('')
         setLot('')
         setPurpose('')
+        nav('/document-history')
       } else {
         alert('Error: ' + res.data.message)
       }
@@ -292,9 +276,12 @@ export default function DocumentRequest(){
               </label>
               <div className="form-field">
                 <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d*"
                   className={`ui-input ${errors.block ? 'ui-error' : ''}`}
                   value={block}
-                  onChange={e => setBlock(e.target.value)}
+                  onChange={e => setBlock(e.target.value.replace(/\D/g, ''))}
                   placeholder="Block number"
                 />
                 {errors.block && <div className="field-error">{errors.block}</div>}
@@ -305,9 +292,12 @@ export default function DocumentRequest(){
               </label>
               <div className="form-field">
                 <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d*"
                   className={`ui-input ${errors.lot ? 'ui-error' : ''}`}
                   value={lot}
-                  onChange={e => setLot(e.target.value)}
+                  onChange={e => setLot(e.target.value.replace(/\D/g, ''))}
                   placeholder="Lot number"
                 />
                 {errors.lot && <div className="field-error">{errors.lot}</div>}
@@ -317,25 +307,19 @@ export default function DocumentRequest(){
                 Document Type <span className="req">*</span>
               </label>
               <div className="form-field">
-                {availableDocTypes.length === 0 ? (
-                  <div className="field-error">
-                    No document types are currently available. Please contact the barangay office.
-                  </div>
-                ) : (
-                  <div className={`type-chips ${errors.type ? 'type-chips-error' : ''}`} role="group" aria-label="Document type">
-                    {availableDocTypes.map(t => (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`type-chip ${type === t ? 'active' : ''}`}
-                        onClick={() => onPickType(t)}
-                        aria-pressed={type === t}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className={`type-chips ${errors.type ? 'type-chips-error' : ''}`} role="group" aria-label="Document type">
+                  {DOC_TYPES.map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`type-chip ${type === t ? 'active' : ''}`}
+                      onClick={() => onPickType(t)}
+                      aria-pressed={type === t}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
                 {errors.type && <div className="field-error">{errors.type}</div>}
               </div>
 
@@ -355,7 +339,7 @@ export default function DocumentRequest(){
             </div>
 
             <div className="form-actions">
-              <Button type="submit" disabled={availableDocTypes.length === 0}>Submit</Button>
+              <Button type="submit">Submit</Button>
             </div>
           </form>
 

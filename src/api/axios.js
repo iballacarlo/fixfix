@@ -1,10 +1,18 @@
 import axios from 'axios'
 
-// default backend base URL; aligns with instructions in README.  Can be overridden
-// via VITE_API_BASE environment variable (useful if you run PHP on different port). 
-const 
-api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost/barangay-api',
+function getApiBase(){
+  const envBase = import.meta.env.VITE_API_BASE
+  if(envBase) return envBase
+
+  // Default backend URL expected by the project README.
+  // If you run PHP on a different host/port, set VITE_API_BASE.
+  // For mobile testing, use the same host as the frontend
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+  return `http://${host}/barangay-api/api.php`
+}
+
+const api = axios.create({
+  baseURL: getApiBase(),
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' }
 })

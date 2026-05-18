@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import mockApi from '../api/mockApi'
@@ -18,13 +19,13 @@ import {
 } from 'lucide-react'
 
 export default function AdminDashboard(){
+  const navigate = useNavigate()
 
   const complaints = mockApi.listComplaints()
   const docs = mockApi.listDocs()
   const users = JSON.parse(localStorage.getItem('mock_users') || '[]')
 
   const [q,setQ] = useState('')
-  const [selectedActivity, setSelectedActivity] = useState(null)
 
   const totalResidents = users.length
   const totalComplaints = complaints.length
@@ -86,16 +87,21 @@ export default function AdminDashboard(){
   }))
 
   const recentActivity = [...complaints,...docs]
-    .sort((a,b)=> new Date(b.date) - new Date(a.date))
+    .map(item => ({
+      ...item,
+      type: item.request_id ? 'Document' : 'Complaint'
+    }))
+    .sort((a,b)=> new Date(b.date || b.date_requested || b.created_at || 0) - new Date(a.date || a.date_requested || a.created_at || 0))
     .slice(0,5)
 
-  const closeModal = () => setSelectedActivity(null)
-
-  const getActivityDate = (item) => {
-    if(item.date) return new Date(item.date).toLocaleDateString('en-US')
-    if(item.date_requested) return new Date(item.date_requested).toLocaleDateString('en-US')
-    return '—'
+  const handleViewActivity = (item) => {
+    if(item.type === 'Document'){
+      navigate('/manage-documents')
+    } else {
+      navigate('/manage-complaints')
+    }
   }
+
 
   return (
     <div className="app-shell">
@@ -215,7 +221,7 @@ export default function AdminDashboard(){
                       </td>
 
                       <td>
-                        <button className="view-btn" onClick={() => setSelectedActivity(r)}>
+                        <button className="view-btn" type="button" onClick={() => handleViewActivity(r)}>
                           View
                         </button>
                       </td>
@@ -230,65 +236,6 @@ export default function AdminDashboard(){
             </div>
 
           </section>
-
-          {selectedActivity && (
-            <div className="modal-overlay" onClick={closeModal}>
-              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close-btn" type="button" onClick={closeModal}>
-                  ✕
-                </button>
-                <h2 className="modal-title">View Activity</h2>
-                <div className="form-card">
-                  <div className="form-field">
-                    <label className="form-label">Reference</label>
-                    <div>{selectedActivity.reference_number || selectedActivity.id || selectedActivity.complaint_id || '—'}</div>
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Type</label>
-                    <div>{selectedActivity.document_type || selectedActivity.type || selectedActivity.category || 'Request'}</div>
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Status</label>
-                    <div>{selectedActivity.status || '—'}</div>
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Date</label>
-                    <div>{getActivityDate(selectedActivity)}</div>
-                  </div>
-                  {selectedActivity.name && (
-                    <div className="form-field">
-                      <label className="form-label">Resident</label>
-                      <div>{selectedActivity.name}</div>
-                    </div>
-                  )}
-                  {selectedActivity.purpose && (
-                    <div className="form-field">
-                      <label className="form-label">Purpose</label>
-                      <div>{selectedActivity.purpose}</div>
-                    </div>
-                  )}
-                  {selectedActivity.title && (
-                    <div className="form-field">
-                      <label className="form-label">Title</label>
-                      <div>{selectedActivity.title}</div>
-                    </div>
-                  )}
-                  {selectedActivity.description && (
-                    <div className="form-field">
-                      <label className="form-label">Description</label>
-                      <div>{selectedActivity.description}</div>
-                    </div>
-                  )}
-                  {selectedActivity.address && (
-                    <div className="form-field">
-                      <label className="form-label">Address</label>
-                      <div>{selectedActivity.address}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
         </main>
 

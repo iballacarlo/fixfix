@@ -408,15 +408,21 @@ export default function Register(){
 
                   <InputField
                     label="Block *"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d*"
                     value={form.block}
-                    onChange={e => setField('block', e.target.value)}
+                    onChange={e => setField('block', e.target.value.replace(/\D/g, ''))}
                     placeholder="Block number"
                   />
 
                   <InputField
                     label="Lot *"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d*"
                     value={form.lot}
-                    onChange={e => setField('lot', e.target.value)}
+                    onChange={e => setField('lot', e.target.value.replace(/\D/g, ''))}
                     placeholder="Lot number"
                   />
 

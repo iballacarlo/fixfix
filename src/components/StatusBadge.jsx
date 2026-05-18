@@ -4,8 +4,11 @@ import './statusbadge.css'
 const map = {
   approved: 'green',
   resolved: 'green',
+  active: 'green',
+  received: 'green',
+  suspended: 'yellow',
+  banned: 'red',
   pending: 'yellow',
-  frozen: 'blue',
   rejected: 'red',
   review: 'blue'
 }

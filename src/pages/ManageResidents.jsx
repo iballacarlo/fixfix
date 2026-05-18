@@ -5,12 +5,15 @@ import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
 import '../styles/history.css'
 import api from '../api/axios'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 
 export default function ManageResidents(){
 
   const [items,setItems] = useState([])
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState(null)
+  const [selectedForDelete, setSelectedForDelete] = useState(null)
+  const [selectedForStatus, setSelectedForStatus] = useState(null)
 
   async function load(){
     setLoading(true)
@@ -28,32 +31,55 @@ export default function ManageResidents(){
 
   useEffect(()=>{ load() }, [])
 
-  async function changeStatus(id){
-    const status = prompt('Set account status (Active, Suspended, Pending):')
+  const statusOptions = ['Active', 'Suspended', 'Banned']
 
-    if(status==null) return
-
+  async function confirmChangeStatus(id, status, suspensionEndDate = null){
     try{
-      await api.patch(`/residents/${id}`,{ account_status:status })
+      setSelectedForStatus(prev => ({ ...prev, loading: true }))
+      const payload = { account_status: status }
+      if(status === 'Suspended'){
+        payload.suspension_end_date = suspensionEndDate
+      }
+      await api.patch(`/residents/${id}`, payload)
+      setSelectedForStatus(null)
       load()
     }catch(err){
+      setSelectedForStatus(prev => ({ ...prev, loading: false }))
       alert('Update failed: '+(err?.response?.data?.message || err.message))
     }
   }
 
-  async function removeResident(id){
-    if(!confirm('Delete resident? This cannot be undone.')) return
+  function removeResident(id){
+    setSelectedForDelete(id)
+  }
 
+  async function confirmRemoveResident(id){
     try{
       await api.delete(`/residents/${id}`)
+      setSelectedForDelete(null)
       load()
     }catch(err){
       alert('Delete failed: '+(err?.response?.data?.message || err.message))
     }
   }
 
+  function changeStatus(id, current){
+    const today = new Date()
+    const defaultSuspendUntil = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7)
+    setSelectedForStatus({
+      id,
+      current: current || 'Active',
+      newStatus: current || 'Active',
+      suspensionUntil: current === 'Suspended' ? (today.toISOString().slice(0,10)) : defaultSuspendUntil.toISOString().slice(0,10),
+      loading: false
+    })
+  }
+
+  useCloseOnEscape(Boolean(selectedForDelete), () => setSelectedForDelete(null))
+  useCloseOnEscape(Boolean(selectedForStatus), () => setSelectedForStatus(null))
+
   return(
-    <div className="app-shell">
+    <div className="app-shell manage-residents-page">
       <Sidebar/>
 
       <div className="main-area">
@@ -74,7 +100,6 @@ export default function ManageResidents(){
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Phone</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -86,17 +111,25 @@ export default function ManageResidents(){
                       <td>{it.resident_id}</td>
                       <td>{it.first_name} {it.last_name}</td>
                       <td>{it.email}</td>
-                      <td>{it.contact_number}</td>
-                      <td><StatusBadge status={it.account_status}/></td>
-                      <td style={{display:'flex',gap:8}}>
+                      <td>
+                        <StatusBadge status={it.account_status}/>
+                        {it.account_status === 'Suspended' && it.suspension_end_date && (
+                          <div style={{ marginTop: 4, fontSize: '0.82rem', color: '#6b7280' }}>
+                            Until {new Date(it.suspension_end_date).toLocaleDateString('en-US')}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{display:'flex',gap:8, alignItems:'center'}}>
                         <Button
                           variant="secondary"
-                          onClick={()=>changeStatus(it.resident_id)}
+                          onClick={() => changeStatus(it.resident_id, it.account_status)}
                         >
                           Change Status
                         </Button>
 
                         <Button
+                          variant="danger"
+                          className="resident-delete-btn"
                           onClick={()=>removeResident(it.resident_id)}
                         >
                           Delete
@@ -107,6 +140,78 @@ export default function ManageResidents(){
                 </tbody>
 
               </table>
+            </div>
+          )}
+
+          {selectedForDelete !== null && (
+            <div className="modal-overlay" onClick={() => setSelectedForDelete(null)}>
+              <div className="modal-card" onClick={e => e.stopPropagation()}>
+                <h3>Confirm Delete</h3>
+                <p>Are you sure you want to delete this resident? This action cannot be undone.</p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+                  <Button type="button" variant="secondary" onClick={() => setSelectedForDelete(null)}>Cancel</Button>
+                  <Button type="button" variant="danger" onClick={() => confirmRemoveResident(selectedForDelete)}>Delete</Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {selectedForStatus && (
+            <div className="modal-overlay" onClick={() => setSelectedForStatus(null)}>
+              <div className="modal-card" onClick={e => e.stopPropagation()}>
+                <h3>Change Account Status</h3>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ fontWeight: 800, display: 'block', marginBottom: 12 }}>Choose status</label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {statusOptions.map(opt => (
+                      <Button
+                        key={opt}
+                        type="button"
+                        variant={selectedForStatus.newStatus === opt ? 'primary' : 'secondary'}
+                        onClick={() => {
+                          if(opt === 'Suspended'){
+                            setSelectedForStatus(prev => ({ ...prev, newStatus: 'Suspended' }))
+                          } else {
+                            confirmChangeStatus(selectedForStatus.id, opt)
+                          }
+                        }}
+                        disabled={selectedForStatus.loading}
+                      >
+                        {selectedForStatus.loading && selectedForStatus.newStatus === opt ? 'Updating...' : opt}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {selectedForStatus.newStatus === 'Suspended' && (
+                    <div style={{ marginTop: 14 }}>
+                      <label style={{ fontWeight: 800, display: 'block', marginBottom: 8 }}>Suspend until</label>
+                      <input
+                        type="date"
+                        className="ui-input"
+                        value={selectedForStatus.suspensionUntil}
+                        min={new Date().toISOString().slice(0, 10)}
+                        onChange={(e) => setSelectedForStatus(prev => ({ ...prev, suspensionUntil: e.target.value }))}
+                      />
+                      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+                        <Button type="button" variant="secondary" onClick={() => setSelectedForStatus(null)} disabled={selectedForStatus.loading}>Cancel</Button>
+                        <Button
+                          type="button"
+                          onClick={() => confirmChangeStatus(selectedForStatus.id, 'Suspended', selectedForStatus.suspensionUntil)}
+                          disabled={selectedForStatus.loading || !selectedForStatus.suspensionUntil}
+                        >
+                          {selectedForStatus.loading ? 'Updating...' : 'Suspend'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {selectedForStatus.newStatus !== 'Suspended' && (
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+                    <Button type="button" variant="secondary" onClick={() => setSelectedForStatus(null)} disabled={selectedForStatus.loading}>Close</Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
