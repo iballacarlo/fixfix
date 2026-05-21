@@ -15,17 +15,36 @@ export default function DocumentHistory(){
   const [isEditingDocument, setIsEditingDocument] = useState(false)
   const [editFormData, setEditFormData] = useState({})
   const [editTimeExceeded, setEditTimeExceeded] = useState(false)
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, docId: null})
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, docId: null, doc: null})
   const { user: authUser, loading: authLoading } = useAuth()
   const currentUser = authUser || mockApi.getCurrentUser()
 
+  const getOwnerId = (item) => {
+    if(!item) return null
+    const direct = Number(item.userId ?? item.resident_id ?? item.user_id ?? item.residentId ?? item.ownerId ?? item.owner_id)
+    if(!Number.isNaN(direct) && direct > 0) return direct
+    const nested = item.user?.id ?? item.user?.user_id ?? item.user?.userId ?? item.resident?.id ?? item.resident?.user_id ?? item.resident?.userId
+    const normalized = Number(nested)
+    return Number.isNaN(normalized) ? null : normalized
+  }
+
   const canDeleteDocument = (doc) => {
     if(!currentUser) return false
-    const ownerId = Number(doc.userId ?? doc.resident_id ?? doc.user_id ?? doc.residentId)
+    const ownerId = getOwnerId(doc)
     const currentUserId = Number(currentUser?.id ?? currentUser?.user_id ?? currentUser?.userId)
     const isOwner = !Number.isNaN(ownerId) && !Number.isNaN(currentUserId) && ownerId === currentUserId
     const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'staff'
     return isOwner || isAdmin
+  }
+
+  const getDocumentId = (doc) => {
+    if(!doc) return null
+    return doc.request_id ?? doc.id ?? doc.numericId ?? doc.reference_number ?? doc.ref ?? null
+  }
+
+  const documentIdToString = (value) => {
+    if(value === undefined || value === null) return ''
+    return String(value)
   }
 
   useEffect(() => {
@@ -73,41 +92,45 @@ export default function DocumentHistory(){
     setIsEditingDocument(false)
   }
 
-  const handleDeleteDocument = (docId) => {
-    const doc = data.find(item => String(item.request_id) === String(docId))
-    if(!doc || !canDeleteDocument(doc)) return
-    setDeleteConfirmModal({show: true, docId})
+  const handleDeleteDocument = (doc) => {
+    const docId = getDocumentId(doc)
+    if(!docId) return
+    if(!canDeleteDocument(doc)) return
+    setDeleteConfirmModal({show: true, docId, doc})
   }
 
   const confirmDeleteDocument = () => {
-    const docId = deleteConfirmModal.docId
+    const { docId, doc: modalDoc } = deleteConfirmModal
     const currentUser = authUser || mockApi.getCurrentUser()
     if(!currentUser) return
     
-    const doc = data.find(item => String(item.request_id) === String(docId))
-    if(!doc) return
+    const docToDelete = modalDoc || data.find(item => documentIdToString(getDocumentId(item)) === documentIdToString(docId))
+    if(!docToDelete) return
     
-    const result = mockApi.deleteDoc(docId, currentUser)
+    const documentIdToDelete = getDocumentId(docToDelete)
+    if(!documentIdToDelete) return
+
+    const result = mockApi.deleteDoc(documentIdToDelete, currentUser)
     
     if(result.success){
-      let updatedData = []
       const currentUserId = Number(currentUser?.id ?? currentUser?.user_id ?? currentUser?.userId)
+      let updatedData = []
       if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff')){
         updatedData = mockApi.listDocs()
       } else if(currentUser){
         updatedData = mockApi.listDocsByUser(currentUserId)
       }
-      setData(updatedData)
+      setData(updatedData.filter(item => item !== docToDelete && documentIdToString(getDocumentId(item)) !== documentIdToString(documentIdToDelete)))
       setSelectedDocument(null)
     } else {
       alert(result.message || 'Failed to delete document')
     }
     
-    setDeleteConfirmModal({show: false, docId: null})
+    setDeleteConfirmModal({show: false, docId: null, doc: null})
   }
 
   const cancelDeleteDocument = () => {
-    setDeleteConfirmModal({show: false, docId: null})
+    setDeleteConfirmModal({show: false, docId: null, doc: null})
   }
 
   const handleEditClick = () => {
@@ -240,7 +263,7 @@ export default function DocumentHistory(){
                   </thead>
                   <tbody>
                     {data.map(d => (
-                      <tr key={d.request_id}>
+                      <tr key={documentIdToString(getDocumentId(d)) || d.reference_number || d.id}>
                         <td>{d.reference_number}</td>
                         <td>{d.name || d.resident_id || '—'}</td>
                         <td>{d.document_type}</td>
@@ -256,7 +279,7 @@ export default function DocumentHistory(){
                           {canDeleteDocument(d) && (
                             <button 
                               className="table-action table-action-danger"
-                              onClick={() => handleDeleteDocument(d.request_id)}
+                              onClick={() => handleDeleteDocument(d)}
                             >
                               Delete
                             </button>
@@ -372,7 +395,7 @@ export default function DocumentHistory(){
                       {canDeleteDocument(selectedDocument) && (
                         <button 
                           className="modal-action-btn modal-action-delete"
-                          onClick={() => handleDeleteDocument(selectedDocument.request_id)}
+                          onClick={() => handleDeleteDocument(selectedDocument)}
                           type="button"
                         >
                           Delete

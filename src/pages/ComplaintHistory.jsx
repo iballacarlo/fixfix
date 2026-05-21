@@ -18,17 +18,36 @@ export default function ComplaintHistory(){
   const [isEditingComplaint, setIsEditingComplaint] = useState(false)
   const [editFormData, setEditFormData] = useState({})
   const [editTimeExceeded, setEditTimeExceeded] = useState(false)
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, complaintId: null})
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, complaintId: null, complaint: null})
   const { user: authUser, loading: authLoading } = useAuth()
   const currentUser = authUser || mockApi.getCurrentUser()
 
+  const getOwnerId = (item) => {
+    if(!item) return null
+    const direct = Number(item.userId ?? item.resident_id ?? item.user_id ?? item.residentId ?? item.ownerId ?? item.owner_id)
+    if(!Number.isNaN(direct) && direct > 0) return direct
+    const nested = item.user?.id ?? item.user?.user_id ?? item.user?.userId ?? item.resident?.id ?? item.resident?.user_id ?? item.resident?.userId
+    const normalized = Number(nested)
+    return Number.isNaN(normalized) ? null : normalized
+  }
+
   const canDeleteComplaint = (complaint) => {
     if(!currentUser) return false
-    const ownerId = Number(complaint.userId ?? complaint.resident_id ?? complaint.user_id ?? complaint.residentId)
+    const ownerId = getOwnerId(complaint)
     const currentUserId = Number(currentUser?.id ?? currentUser?.user_id ?? currentUser?.userId)
     const isOwner = !Number.isNaN(ownerId) && !Number.isNaN(currentUserId) && ownerId === currentUserId
     const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'staff'
     return isOwner || isAdmin
+  }
+
+  const getComplaintId = (complaint) => {
+    if(!complaint) return null
+    return complaint.complaint_id ?? complaint.id ?? complaint.numericId ?? complaint.request_id ?? complaint.reference_number ?? complaint.ref ?? null
+  }
+
+  const complaintIdToString = (value) => {
+    if(value === undefined || value === null) return ''
+    return String(value)
   }
 
   useEffect(() => {
@@ -97,48 +116,56 @@ export default function ComplaintHistory(){
     return ['pending', 'in process', 'inprocess', 'resolved', 'closed', 'released', 'received'].some(p => s.includes(p))
   }
 
-  const handleDeleteComplaint = (complaintId) => {
-    const complaint = data.find(item => String(item.complaint_id) === String(complaintId))
-    if(!complaint || !canDeleteComplaint(complaint)) return
-    setDeleteConfirmModal({show: true, complaintId})
+  const handleDeleteComplaint = (complaint) => {
+    const complaintId = getComplaintId(complaint)
+    if(!complaintId) return
+    if(!canDeleteComplaint(complaint)) return
+    setDeleteConfirmModal({show: true, complaintId, complaint})
   }
 
   const confirmDeleteComplaint = async () => {
-    const complaintId = deleteConfirmModal.complaintId
+    const { complaintId, complaint: modalComplaint } = deleteConfirmModal
     const currentUser = authUser || mockApi.getCurrentUser()
     if(!currentUser) return
 
-    const complaint = data.find(item => String(item.complaint_id) === String(complaintId))
-    if(!complaint) return
+    const complaintToDelete = modalComplaint || data.find(item => complaintIdToString(getComplaintId(item)) === complaintIdToString(complaintId))
+    if(!complaintToDelete) return
+
+    const complaintIdToDelete = getComplaintId(complaintToDelete)
+    if(!complaintIdToDelete) return
 
     let result = { success: false, message: 'Unable to delete complaint' }
     let attemptedBackend = false
+    const isAdminOrStaff = currentUser.role === 'admin' || currentUser.role === 'staff'
 
-    try {
-      const res = await api.delete(`/complaints/${complaintId}`)
-      attemptedBackend = true
-      if(res?.data?.success){
-        result = { success: true }
-      } else {
-        result = { success: false, message: res?.data?.message || 'Failed to delete complaint' }
-      }
-    } catch(err) {
-      if(err.response){
+    if(useBackend && isAdminOrStaff){
+      try {
+        const res = await api.delete(`/complaints/${complaintIdToDelete}`)
+        attemptedBackend = true
+        if(res?.data?.success){
+          result = { success: true }
+        } else {
+          result = { success: false, message: res?.data?.message || 'Failed to delete complaint' }
+        }
+      } catch(err) {
+        attemptedBackend = true
         result = { success: false, message: err.response?.data?.message || err.message || 'Failed to delete complaint' }
       }
-    }
 
-    if(!result.success && !attemptedBackend){
-      result = mockApi.deleteComplaint(complaintId, currentUser)
+      if(!result.success){
+        result = mockApi.deleteComplaint(complaintIdToDelete, currentUser)
+      }
+    } else {
+      result = mockApi.deleteComplaint(complaintIdToDelete, currentUser)
     }
 
     if(result.success){
       if(attemptedBackend){
         try {
-          mockApi.deleteComplaint(complaintId, currentUser)
+          mockApi.deleteComplaint(complaintIdToDelete, currentUser)
         } catch {}
       }
-      setData(prevData => prevData.filter(item => String(item.complaint_id) !== String(complaintId)))
+      setData(prevData => prevData.filter(item => item !== complaintToDelete && complaintIdToString(getComplaintId(item)) !== complaintIdToString(complaintIdToDelete)))
       setSelectedComplaint(null)
       try {
         localStorage.setItem('complaint_sync', Date.now().toString())
@@ -147,11 +174,11 @@ export default function ComplaintHistory(){
       alert(result.message || 'Failed to delete complaint')
     }
 
-    setDeleteConfirmModal({show: false, complaintId: null})
+    setDeleteConfirmModal({show: false, complaintId: null, complaint: null})
   }
 
   const cancelDeleteComplaint = () => {
-    setDeleteConfirmModal({show: false, complaintId: null})
+    setDeleteConfirmModal({show: false, complaintId: null, complaint: null})
   }
 
   const handleEditClick = () => {
@@ -280,7 +307,7 @@ export default function ComplaintHistory(){
                   </thead>
                   <tbody>
                     {list.map(r => (
-                      <tr key={r.complaint_id}>
+                      <tr key={complaintIdToString(getComplaintId(r)) || r.ref || r.id}>
                         <td>{r.ref || `C-${r.complaint_id}`}</td>
                         <td>{r.resident_name || r.name || r.resident_id || '—'}</td>
                         <td>{r.category || r.category_id || '—'}</td>
@@ -296,7 +323,7 @@ export default function ComplaintHistory(){
                           {canDeleteComplaint(r) && (
                             <button 
                               className="table-action table-action-danger"
-                              onClick={() => handleDeleteComplaint(r.complaint_id)}
+                              onClick={() => handleDeleteComplaint(r)}
                             >
                               Delete
                             </button>
@@ -402,7 +429,7 @@ export default function ComplaintHistory(){
                       {canDeleteComplaint(selectedComplaint) && (
                         <button 
                           className="modal-action-btn modal-action-delete"
-                          onClick={() => handleDeleteComplaint(selectedComplaint.complaint_id)}
+                          onClick={() => handleDeleteComplaint(selectedComplaint)}
                           type="button"
                         >
                           Delete
