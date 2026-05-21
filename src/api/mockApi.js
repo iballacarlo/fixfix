@@ -7,6 +7,7 @@ const KEY_DOCS = 'mock_docs'
 const KEY_NOTIFICATIONS = 'mock_notifications'
 const KEY_CATEGORIES = 'mock_categories'
 const KEY_SYSTEM_SETTINGS = 'mock_system_settings'
+const KEY_DOCUMENT_STATUSES = 'mock_document_statuses'
 
 function load(key){
   return JSON.parse(localStorage.getItem(key) || '[]')
@@ -982,6 +983,28 @@ const api = {
     save(KEY_SYSTEM_SETTINGS, merged)
 
     return merged
+  },
+
+  getDocumentStatuses(){
+    const defaultStatuses = {
+      'Barangay Clearance': 'enabled',
+      'Certificate of Residency': 'enabled',
+      'Certificate of Indigency': 'enabled'
+    }
+    return loadJson(KEY_DOCUMENT_STATUSES, defaultStatuses)
+  },
+
+  saveDocumentStatuses(statuses){
+    save(KEY_DOCUMENT_STATUSES, statuses)
+    return statuses
+  },
+
+  toggleDocumentStatus(docType){
+    const statuses = this.getDocumentStatuses()
+    const current = statuses[docType] || 'enabled'
+    statuses[docType] = current === 'enabled' ? 'disabled' : 'enabled'
+    save(KEY_DOCUMENT_STATUSES, statuses)
+    return statuses
   },
 
   // =========================

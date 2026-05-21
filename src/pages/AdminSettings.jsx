@@ -10,6 +10,11 @@ import mockApi from '../api/mockApi'
 const DEFAULT_CATEGORIES = ['Noise', 'Garbage', 'Traffic', 'Water Supply', 'Electricity', 'Public Safety', 'Other']
 const DEFAULT_SYSTEM_NAME = 'Barangay Service & Complaint Management System'
 const DEFAULT_CONTACT_EMAIL = 'brgy.mambog.ii@gmail.com'
+const DEFAULT_DOCUMENT_TYPES = [
+  'Barangay Clearance',
+  'Certificate of Residency',
+  'Certificate of Indigency'
+]
 
 export default function AdminSettings(){
   const {
@@ -27,12 +32,14 @@ export default function AdminSettings(){
   const [systemName, setSystemName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [notice, setNotice] = useState('')
+  const [documentStatuses, setDocumentStatuses] = useState({})
 
   useEffect(() => {
     setCategories(mockApi.listCategories())
     const config = mockApi.getSystemSettings()
     setSystemName(config.systemName || DEFAULT_SYSTEM_NAME)
     setContactEmail(config.contactEmail || DEFAULT_CONTACT_EMAIL)
+    setDocumentStatuses(mockApi.getDocumentStatuses())
   }, [])
 
   useEffect(() => {
@@ -58,13 +65,26 @@ export default function AdminSettings(){
     setNewCat('')
     setSystemName(DEFAULT_SYSTEM_NAME)
     setContactEmail(DEFAULT_CONTACT_EMAIL)
+    const defaultDocStatuses = {}
+    DEFAULT_DOCUMENT_TYPES.forEach(doc => {
+      defaultDocStatuses[doc] = 'enabled'
+    })
+    setDocumentStatuses(defaultDocStatuses)
     resetSettings()
     mockApi.saveCategories(DEFAULT_CATEGORIES)
     mockApi.saveSystemSettings({
       systemName: DEFAULT_SYSTEM_NAME,
       contactEmail: DEFAULT_CONTACT_EMAIL
     })
+    mockApi.saveDocumentStatuses(defaultDocStatuses)
     setNotice('System and accessibility settings reset to default.')
+  }
+
+  function toggleDocumentStatus(docType){
+    setDocumentStatuses(prev => ({
+      ...prev,
+      [docType]: prev[docType] === 'enabled' ? 'disabled' : 'enabled'
+    }))
   }
 
   function save(){
@@ -73,6 +93,7 @@ export default function AdminSettings(){
       systemName,
       contactEmail
     })
+    mockApi.saveDocumentStatuses(documentStatuses)
     saveSettings()
     setNotice('System and accessibility settings saved.')
   }
@@ -207,6 +228,67 @@ export default function AdminSettings(){
 
                 <div className="helper" style={{ marginTop: 10 }}>
                   These categories will appear in the complaint form across all resident devices.
+                </div>
+              </div>
+
+              <label className="form-label" style={{ paddingTop: 10 }}>
+                Document Types
+              </label>
+
+              <div className="form-field">
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    fontWeight: 900,
+                    color: 'var(--text, #111827)',
+                    marginBottom: 10
+                  }}
+                >
+                  <Tags size={16} strokeWidth={2} />
+                  Available Documents
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {Object.entries(documentStatuses).map(([docType, status]) => {
+                    const isDisabled = status === 'disabled'
+                    return (
+                      <div
+                        key={docType}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 12px',
+                          border: '1px solid var(--border, #d1d5db)',
+                          borderRadius: 8,
+                          backgroundColor: isDisabled ? '#d1d5db' : 'transparent'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: isDisabled ? '#000' : 'var(--text, #111827)' }}>
+                            {docType}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: isDisabled ? '#000' : 'var(--text-muted, #6b7280)', marginTop: 2 }}>
+                            {status === 'enabled' ? 'Available for request' : 'Frozen - Residents cannot request'}
+                          </div>
+                        </div>
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={status === 'enabled'}
+                            onChange={() => toggleDocumentStatus(docType)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="helper" style={{ marginTop: 10 }}>
+                  Toggle document types to freeze/unfreeze them. When frozen, residents will not be able to request these documents.
                 </div>
               </div>
             </div>

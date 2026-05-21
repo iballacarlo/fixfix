@@ -25,6 +25,8 @@ export default function ManageDocuments(){
   const [items,setItems] = useState([])
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState('All')
   const [requestType, setRequestType] = useState('Barangay Clearance')
   const [highlightedRequestId, setHighlightedRequestId] = useState(null)
   const [documentStatuses, setDocumentStatuses] = useState([
@@ -375,6 +377,32 @@ export default function ManageDocuments(){
             <div className="empty-state">Loading documents...</div>
           ) : (
             <>
+            <div className="history-card">
+              <div className="history-controls">
+                <div className="filter-group">
+                  <select
+                    className="ui-input"
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Requested">Requested</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Ready">Ready</option>
+                    <option value="Released">Released</option>
+                    <option value="Received">Received</option>
+                  </select>
+
+                  <input
+                    className="ui-input"
+                    type="text"
+                    placeholder="Search by Ref, Type, or Resident"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -389,7 +417,16 @@ export default function ManageDocuments(){
                 </thead>
 
                 <tbody>
-                  {items.map(it=>(
+                  {items
+                    .filter(item => {
+                      const matchesStatus = filterStatus === 'All' || item.status === filterStatus
+                      const matchesSearch = searchQuery === '' ||
+                        (item.reference_number || item.request_id || '').toString().includes(searchQuery) ||
+                        (item.document_type || item.document || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (item.name || item.resident_id || '').toLowerCase().includes(searchQuery.toLowerCase())
+                      return matchesStatus && matchesSearch
+                    })
+                    .map(it=>(
                     <tr
                       key={it.request_id}
                       id={`document-row-${it.request_id}`}
@@ -416,6 +453,18 @@ export default function ManageDocuments(){
 
               </table>
             </div>
+
+            {items.length > 0 && items
+              .filter(item => {
+                const matchesStatus = filterStatus === 'All' || item.status === filterStatus
+                const matchesSearch = searchQuery === '' ||
+                  (item.reference_number || item.request_id || '').toString().includes(searchQuery) ||
+                  (item.document_type || item.document || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (item.name || item.resident_id || '').toLowerCase().includes(searchQuery.toLowerCase())
+                return matchesStatus && matchesSearch
+              }).length === 0 && (
+              <div className="empty-state">No document requests match your search criteria.</div>
+            )}
 
             {processingRequest && (
               <div className="modal-overlay" onClick={closeProcessingModal}>

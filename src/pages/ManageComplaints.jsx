@@ -14,6 +14,8 @@ export default function ManageComplaints(){
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState('All')
   const [selectedComplaint, setSelectedComplaint] = useState(null)
   const [selectedMediaPreview, setSelectedMediaPreview] = useState(null)
   const [selectedForStatus, setSelectedForStatus] = useState(null)
@@ -680,6 +682,31 @@ export default function ManageComplaints(){
             <div className="empty-state">Loading complaints...</div>
           ) : (
             <>
+            <div className="history-card">
+              <div className="history-controls">
+                <div className="filter-group">
+                  <select
+                    className="ui-input"
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+
+                  <input
+                    className="ui-input"
+                    type="text"
+                    placeholder="Search by ID, Title, or Resident"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -695,7 +722,16 @@ export default function ManageComplaints(){
                 </thead>
 
                 <tbody>
-                  {items.map(it => (
+                  {items
+                    .filter(item => {
+                      const matchesStatus = filterStatus === 'All' || item.status === filterStatus
+                      const matchesSearch = searchQuery === '' ||
+                        String(item.complaint_id).includes(searchQuery) ||
+                        (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (item.resident_name || item.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                      return matchesStatus && matchesSearch
+                    })
+                    .map(it => (
                     <tr
                       key={it.complaint_id}
                       id={`complaint-row-${it.complaint_id}`}
@@ -746,6 +782,18 @@ export default function ManageComplaints(){
 
               </table>
             </div>
+
+            {items.length > 0 && items
+              .filter(item => {
+                const matchesStatus = filterStatus === 'All' || item.status === filterStatus
+                const matchesSearch = searchQuery === '' ||
+                  String(item.complaint_id).includes(searchQuery) ||
+                  (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (item.resident_name || item.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                return matchesStatus && matchesSearch
+              }).length === 0 && (
+              <div className="empty-state">No complaints match your search criteria.</div>
+            )}
 
             {selectedComplaint && (
               <div className="modal-overlay" onClick={closeModal}>

@@ -548,6 +548,28 @@
   color: rgb(37, 99, 235);
 }
 
+.type-chip.disabled,
+.type-chip:disabled{
+  cursor: not-allowed;
+  background: #d1d5db !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #000 !important;
+  opacity: 1 !important;
+}
+
+.type-chip.disabled,
+.type-chip:disabled,
+.type-chip.disabled *,
+.type-chip:disabled *{
+  color: #000 !important;
+}
+
+.type-chip.disabled:hover,
+.type-chip:disabled:hover{
+  background: #d1d5db !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
 /* Dark mode */
 html.dark .form-card{
   border-color: rgba(255,255,255,0.12);
@@ -577,6 +599,28 @@ html.dark .type-chip.active{
   color: rgb(96, 165, 250);
   border-color: rgba(96, 165, 250, 0.28);
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+}
+
+html.dark .type-chip.disabled,
+html.dark .type-chip:disabled{
+  cursor: not-allowed;
+  background: rgba(209, 213, 219, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  color: #000 !important;
+  opacity: 1 !important;
+}
+
+html.dark .type-chip.disabled,
+html.dark .type-chip:disabled,
+html.dark .type-chip.disabled *,
+html.dark .type-chip:disabled *{
+  color: #000 !important;
+}
+
+html.dark .type-chip.disabled:hover,
+html.dark .type-chip:disabled:hover{
+  background: rgba(209, 213, 219, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
 }
 
 html.dark .ui-input{
@@ -674,6 +718,28 @@ html.high-contrast .type-chip.active {
   color: #ffd60a;
   border-color: #ffd60a;
   box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.35);
+}
+
+html.high-contrast .type-chip.disabled,
+html.high-contrast .type-chip:disabled {
+  cursor: not-allowed;
+  background: #d1d5db !important;
+  border-color: #000 !important;
+  color: #000 !important;
+  opacity: 1 !important;
+}
+
+html.high-contrast .type-chip.disabled,
+html.high-contrast .type-chip:disabled,
+html.high-contrast .type-chip.disabled *,
+html.high-contrast .type-chip:disabled *{
+  color: #000 !important;
+}
+
+html.high-contrast .type-chip.disabled:hover,
+html.high-contrast .type-chip:disabled:hover {
+  background: #d1d5db !important;
+  border-color: #000 !important;
 }
 
 html.high-contrast .file-upload-btn-small {

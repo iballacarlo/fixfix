@@ -38,7 +38,12 @@ export default function DocumentRequest(){
   const [street, setStreet] = useState('')
   const [block, setBlock] = useState('')
   const [lot, setLot] = useState('')
+  const [documentStatuses, setDocumentStatuses] = useState({})
   const maxBirthdate = new Date().toISOString().split('T')[0]
+
+  const getFirstEnabledDocType = (statuses) => {
+    return DOC_TYPES.find(docType => statuses[docType] !== 'disabled') || DOC_TYPES[0]
+  }
 
   const formatMmDdYyyy = (value) => {
     const date = new Date(value)
@@ -52,9 +57,17 @@ export default function DocumentRequest(){
   const { user } = useAuth()
 
   useEffect(() => {
-  if (!user) return
+    const statuses = mockApi.getDocumentStatuses()
+    setDocumentStatuses(statuses)
+    if (statuses[type] === 'disabled') {
+      setType(getFirstEnabledDocType(statuses))
+    }
+  }, [])
 
-  setName((prev) => prev || getUserFullName(user))
+  useEffect(() => {
+    if (!user) return
+
+    setName((prev) => prev || getUserFullName(user))
 
   setBirthdate(prev =>
     prev ||
@@ -361,17 +374,23 @@ export default function DocumentRequest(){
               </label>
               <div className="form-field">
                 <div className={`type-chips ${errors.type ? 'type-chips-error' : ''}`} role="group" aria-label="Document type">
-                  {DOC_TYPES.map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      className={`type-chip ${type === t ? 'active' : ''}`}
-                      onClick={() => onPickType(t)}
-                      aria-pressed={type === t}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {DOC_TYPES.map(t => {
+                    const isDisabled = documentStatuses[t] === 'disabled'
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`type-chip ${type === t ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                        onClick={() => !isDisabled && onPickType(t)}
+                        disabled={isDisabled}
+                        aria-pressed={type === t}
+                        title={isDisabled ? 'This document type is currently frozen by the administrator' : ''}
+                      >
+                        {t}
+                        {isDisabled && <span style={{ fontSize: '0.75rem', marginLeft: 4 }}>(Frozen)</span>}
+                      </button>
+                    )
+                  })}
                 </div>
                 {errors.type && <div className="field-error">{errors.type}</div>}
               </div>

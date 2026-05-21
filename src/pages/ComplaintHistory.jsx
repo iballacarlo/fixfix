@@ -264,6 +264,9 @@ export default function ComplaintHistory(){
         description: selectedComplaint.description || '',
         location: selectedComplaint.location || '',
         notes: selectedComplaint.notes || '',
+        resident_name: selectedComplaint.resident_name || selectedComplaint.name || selectedComplaint.resident_id || '',
+        respondent_name: selectedComplaint.respondent_name || '',
+        date: selectedComplaint.date || selectedComplaint.incident_date || '',
         images: normalizedMedia
       })
       setEditMediaPreviews(normalizedMedia)
@@ -475,6 +478,13 @@ export default function ComplaintHistory(){
                       <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString('en-US') : '—'}</span>
                     </div>
 
+                    {selectedComplaint.respondent_name && (
+                      <div className="complaint-detail-row">
+                        <span className="detail-label">Respondent:</span>
+                        <span className="detail-value">{selectedComplaint.respondent_name}</span>
+                      </div>
+                    )}
+
                     <div className="complaint-detail-row">
                       <span className="detail-label">Status:</span>
                       <span className="detail-value"><StatusBadge status={selectedComplaint.status} /></span>
@@ -487,10 +497,10 @@ export default function ComplaintHistory(){
                       </div>
                     )}
 
-                    {selectedComplaint.date && (
+                    {(selectedComplaint.date || selectedComplaint.incident_date) && (
                       <div className="complaint-detail-row">
                         <span className="detail-label">Incident Date:</span>
-                        <span className="detail-value">{selectedComplaint.date}</span>
+                        <span className="detail-value">{selectedComplaint.date || selectedComplaint.incident_date}</span>
                       </div>
                     )}
 
@@ -571,6 +581,39 @@ export default function ComplaintHistory(){
                         <option value="Garbage">Garbage</option>
                         <option value="Traffic">Traffic</option>
                       </select>
+                    </div>
+
+                    <div className="complaint-detail-row">
+                      <span className="detail-label">Resident:</span>
+                      <input
+                        type="text"
+                        className="edit-field"
+                        value={editFormData.resident_name || ''}
+                        onChange={(e) => handleEditFieldChange('resident_name', e.target.value)}
+                        placeholder="Resident name"
+                      />
+                    </div>
+
+                    <div className="complaint-detail-row">
+                      <span className="detail-label">Respondent:</span>
+                      <input
+                        type="text"
+                        className="edit-field"
+                        value={editFormData.respondent_name || ''}
+                        onChange={(e) => handleEditFieldChange('respondent_name', e.target.value)}
+                        placeholder="Respondent name"
+                      />
+                    </div>
+
+                    <div className="complaint-detail-row">
+                      <span className="detail-label">Incident Date:</span>
+                      <input
+                        type="date"
+                        className="edit-field"
+                        value={editFormData.date || ''}
+                        onChange={(e) => handleEditFieldChange('date', e.target.value)}
+                        placeholder="Incident date"
+                      />
                     </div>
 
                     <div className="complaint-detail-row">
