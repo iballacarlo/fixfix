@@ -1,124 +1,332 @@
--- SQL schema for Barangay Service & Complaint Management
-CREATE DATABASE IF NOT EXISTS barangay_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- =====================================================
+-- Barangay Service & Complaint Management System
+-- COMPLETE FIXED SQL FILE
+-- =====================================================
+
+CREATE DATABASE IF NOT EXISTS barangay_db
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
 USE barangay_db;
 
--- Residents
+-- =====================================================
+-- RESIDENT TABLE
+-- =====================================================
+
 CREATE TABLE IF NOT EXISTS Resident (
   resident_id INT AUTO_INCREMENT PRIMARY KEY,
-  first_name VARCHAR(255),
-  middle_name VARCHAR(255),
-  last_name VARCHAR(255),
-  birth_date DATE,
-  gender VARCHAR(32),
-  address VARCHAR(500),
-  contact_number VARCHAR(50),
-  email VARCHAR(255) UNIQUE,
-  password VARCHAR(255),
-  account_status VARCHAR(50) DEFAULT 'Pending',
+
+  first_name VARCHAR(255) NOT NULL,
+  middle_name VARCHAR(255) DEFAULT NULL,
+  last_name VARCHAR(255) NOT NULL,
+
+  birth_date DATE DEFAULT NULL,
+  gender VARCHAR(32) DEFAULT NULL,
+
+  address VARCHAR(500) DEFAULT NULL,
+  contact_number VARCHAR(50) DEFAULT NULL,
+
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+
+  account_status VARCHAR(50) DEFAULT 'Active',
   suspension_end_date DATE DEFAULT NULL,
+
   registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-  api_token VARCHAR(255)
+
+  api_token VARCHAR(255) DEFAULT NULL
 );
 
--- Staff
+-- =====================================================
+-- STAFF TABLE
+-- =====================================================
+
 CREATE TABLE IF NOT EXISTS Staff (
   staff_id INT AUTO_INCREMENT PRIMARY KEY,
-  full_name VARCHAR(255),
-  role VARCHAR(50),
-  email VARCHAR(255) UNIQUE,
-  password VARCHAR(255),
-  contact_number VARCHAR(50),
+
+  full_name VARCHAR(255) NOT NULL,
+
+  role VARCHAR(50) DEFAULT 'Staff',
+
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+
+  contact_number VARCHAR(50) DEFAULT NULL,
+
   account_status VARCHAR(50) DEFAULT 'Active',
-  api_token VARCHAR(255)
+
+  suspension_end_date DATE DEFAULT NULL,
+
+  api_token VARCHAR(255) DEFAULT NULL
 );
+
+-- =====================================================
+-- CATEGORY TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Category (
   category_id INT AUTO_INCREMENT PRIMARY KEY,
-  category_name VARCHAR(255),
-  description VARCHAR(1000)
+
+  category_name VARCHAR(255) NOT NULL,
+
+  description VARCHAR(1000) DEFAULT NULL
 );
+
+-- =====================================================
+-- COMPLAINT TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Complaint (
   complaint_id INT AUTO_INCREMENT PRIMARY KEY,
-  resident_id INT,
-  category_id INT,
-  assigned_staff_id INT NULL,
-  title VARCHAR(255),
+
+  resident_id INT DEFAULT NULL,
+
+  category_id INT DEFAULT NULL,
+
+  assigned_staff_id INT DEFAULT NULL,
+
+  title VARCHAR(255) NOT NULL,
+
   description TEXT,
-  incident_location VARCHAR(255),
-  incident_date DATE,
-  status VARCHAR(50) DEFAULT 'Pending',
-  resolution_notes TEXT,
+
+  incident_location VARCHAR(255) DEFAULT NULL,
+
+  incident_date DATE DEFAULT NULL,
+
+  status VARCHAR(50) DEFAULT 'Submitted',
+
+  resolution_notes TEXT DEFAULT NULL,
+
   date_submitted DATETIME DEFAULT CURRENT_TIMESTAMP,
-  date_resolved DATETIME NULL,
-  FOREIGN KEY (resident_id) REFERENCES Resident(resident_id) ON DELETE SET NULL,
-  FOREIGN KEY (category_id) REFERENCES Category(category_id) ON DELETE SET NULL,
-  FOREIGN KEY (assigned_staff_id) REFERENCES Staff(staff_id) ON DELETE SET NULL
+
+  date_resolved DATETIME DEFAULT NULL,
+
+  CONSTRAINT fk_complaint_resident
+    FOREIGN KEY (resident_id)
+    REFERENCES Resident(resident_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT fk_complaint_category
+    FOREIGN KEY (category_id)
+    REFERENCES Category(category_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT fk_complaint_staff
+    FOREIGN KEY (assigned_staff_id)
+    REFERENCES Staff(staff_id)
+    ON DELETE SET NULL
 );
+
+-- =====================================================
+-- COMPLAINT ATTACHMENT TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Complaint_Attachment (
   attachment_id INT AUTO_INCREMENT PRIMARY KEY,
-  complaint_id INT,
-  file_path VARCHAR(1000),
+
+  complaint_id INT NOT NULL,
+
+  file_path VARCHAR(1000) NOT NULL,
+
   upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (complaint_id) REFERENCES Complaint(complaint_id) ON DELETE CASCADE
+
+  CONSTRAINT fk_attachment_complaint
+    FOREIGN KEY (complaint_id)
+    REFERENCES Complaint(complaint_id)
+    ON DELETE CASCADE
 );
+
+-- =====================================================
+-- DOCUMENT REQUEST TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Document_Request (
   request_id INT AUTO_INCREMENT PRIMARY KEY,
   resident_id INT,
   processed_by INT NULL,
+
+  full_name VARCHAR(255),
+  birth_date DATE,
+  address TEXT,
+
   document_type VARCHAR(255),
   purpose VARCHAR(1000),
-  business_name VARCHAR(255),
+
   status VARCHAR(50) DEFAULT 'Pending',
   reference_number VARCHAR(255) UNIQUE,
+
   date_requested DATETIME DEFAULT CURRENT_TIMESTAMP,
   date_approved DATETIME NULL,
   date_released DATETIME NULL,
+
   FOREIGN KEY (resident_id) REFERENCES Resident(resident_id) ON DELETE SET NULL,
   FOREIGN KEY (processed_by) REFERENCES Staff(staff_id) ON DELETE SET NULL
 );
 
+-- =====================================================
+-- DIGITAL ID TABLE
+-- =====================================================
+
 CREATE TABLE IF NOT EXISTS Digital_ID (
   digital_id INT AUTO_INCREMENT PRIMARY KEY,
+
   resident_id INT UNIQUE,
+
   id_number VARCHAR(255) UNIQUE,
+
   qr_token VARCHAR(255) UNIQUE,
-  issue_date DATE,
-  expiration_date DATE,
+
+  issue_date DATE DEFAULT NULL,
+
+  expiration_date DATE DEFAULT NULL,
+
   status VARCHAR(50) DEFAULT 'Active',
-  FOREIGN KEY (resident_id) REFERENCES Resident(resident_id) ON DELETE CASCADE
+
+  CONSTRAINT fk_digital_resident
+    FOREIGN KEY (resident_id)
+    REFERENCES Resident(resident_id)
+    ON DELETE CASCADE
 );
+
+-- =====================================================
+-- ACCESSIBILITY SETTINGS TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Accessibility_Settings (
   accessibility_id INT AUTO_INCREMENT PRIMARY KEY,
+
   resident_id INT UNIQUE,
+
   text_to_speech_enabled BOOLEAN DEFAULT FALSE,
+
   high_contrast_mode BOOLEAN DEFAULT FALSE,
+
   dark_mode BOOLEAN DEFAULT FALSE,
+
   font_size VARCHAR(50) DEFAULT 'medium',
-  FOREIGN KEY (resident_id) REFERENCES Resident(resident_id) ON DELETE CASCADE
+
+  CONSTRAINT fk_accessibility_resident
+    FOREIGN KEY (resident_id)
+    REFERENCES Resident(resident_id)
+    ON DELETE CASCADE
 );
+
+-- =====================================================
+-- NOTIFICATION TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Notification (
   notification_id INT AUTO_INCREMENT PRIMARY KEY,
-  resident_id INT,
-  message TEXT,
-  type VARCHAR(50),
+
+  resident_id INT DEFAULT NULL,
+
+  message TEXT NOT NULL,
+
+  type VARCHAR(50) DEFAULT 'info',
+
   is_read BOOLEAN DEFAULT FALSE,
+
   date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (resident_id) REFERENCES Resident(resident_id) ON DELETE CASCADE
+
+  CONSTRAINT fk_notification_resident
+    FOREIGN KEY (resident_id)
+    REFERENCES Resident(resident_id)
+    ON DELETE CASCADE
 );
+
+-- =====================================================
+-- REPORT LOG TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS Report_Log (
   report_id INT AUTO_INCREMENT PRIMARY KEY,
-  generated_by INT,
+
+  generated_by INT DEFAULT NULL,
+
   report_type VARCHAR(255),
+
   date_generated DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (generated_by) REFERENCES Staff(staff_id) ON DELETE SET NULL
+
+  CONSTRAINT fk_report_staff
+    FOREIGN KEY (generated_by)
+    REFERENCES Staff(staff_id)
+    ON DELETE SET NULL
 );
 
--- Seed users (admin and resident) with provided credentials (passwords should be hashed by your app)
-INSERT IGNORE INTO Staff (full_name, role, email, password, contact_number, account_status) VALUES ('Admin','Admin','admin','123','0000000000','Active');
-INSERT IGNORE INTO Resident (first_name, middle_name, last_name, birth_date, gender, address, contact_number, email, password, account_status, registration_date) VALUES ('Carlo','','Resident','2000-01-01','Male','Sample Address','0000000000','carlo','123','Active',NOW());
+-- =====================================================
+-- DEFAULT CATEGORIES
+-- =====================================================
+
+INSERT IGNORE INTO Category (category_id, category_name, description)
+VALUES
+(1, 'Noise', 'Noise related complaints'),
+(2, 'Garbage', 'Garbage collection concerns'),
+(3, 'Traffic', 'Traffic related complaints'),
+(4, 'Water Supply', 'Water supply concerns'),
+(5, 'Electricity', 'Electricity related concerns'),
+(6, 'Public Safety', 'Public safety concerns'),
+(7, 'Other', 'Other concerns');
+
+-- =====================================================
+-- DEFAULT ADMIN ACCOUNT
+-- EMAIL: admin@gmail.com
+-- PASSWORD: 123
+-- =====================================================
+
+DELETE FROM Staff WHERE email = 'admin@gmail.com';
+
+INSERT INTO Staff (
+  full_name,
+  role,
+  email,
+  password,
+  contact_number,
+  account_status
+)
+VALUES (
+  'Admin',
+  'Admin',
+  'admin@gmail.com',
+  '$2y$12$SehuW12J4Nm5YLfemjdnlOUC6pqt0oHDxITB7anKQP2l6jXV.p8Bm',
+  '0000000000',
+  'Active'
+);
+
+-- =====================================================
+-- DEFAULT RESIDENT ACCOUNT
+-- EMAIL: carlo@gmail.com
+-- PASSWORD: 123
+-- =====================================================
+
+DELETE FROM Resident WHERE email = 'carlo@gmail.com';
+
+INSERT INTO Resident (
+  first_name,
+  middle_name,
+  last_name,
+  birth_date,
+  gender,
+  address,
+  contact_number,
+  email,
+  password,
+  account_status,
+  registration_date
+)
+VALUES (
+  'Carlo',
+  '',
+  'Resident',
+  '2000-01-01',
+  'Male',
+  'Sample Address',
+  '0000000000',
+  'carlo@gmail.com',
+  '$2y$12$y.1LWnWa33aNTPCaK3hg..u.FeDm57.odqQEsVSzycSCUVT/.oWf2',
+  'Active',
+  NOW()
+);
+
+-- =====================================================
+-- FINISHED
+-- =====================================================

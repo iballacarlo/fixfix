@@ -15,6 +15,7 @@ export default function ManageComplaints(){
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedComplaint, setSelectedComplaint] = useState(null)
+  const [selectedMediaPreview, setSelectedMediaPreview] = useState(null)
   const [selectedForStatus, setSelectedForStatus] = useState(null)
   const [highlightedComplaintId, setHighlightedComplaintId] = useState(null)
 
@@ -98,12 +99,43 @@ export default function ManageComplaints(){
     }
   }
 
+  const normalizeComplaintMedia = (images = []) => {
+    if(!Array.isArray(images)) return []
+    return images.map((media) => {
+      if(!media) return null
+      if(typeof media === 'string') {
+        return { url: media, type: media.startsWith('data:video') ? 'video/*' : 'image/*', name: 'Media file' }
+      }
+      if(media.url && typeof media.url === 'string') {
+        return {
+          url: media.url,
+          type: media.type || 'image/*',
+          name: media.name || 'Media file'
+        }
+      }
+      if(media instanceof File) {
+        return {
+          name: media.name,
+          type: media.type,
+          url: URL.createObjectURL(media)
+        }
+      }
+      return null
+    }).filter(Boolean)
+  }
+
   const handleViewComplaint = (complaint) => {
     setSelectedComplaint(complaint)
+    setSelectedMediaPreview(null)
+  }
+
+  const openMediaPreview = (media) => {
+    setSelectedMediaPreview(media)
   }
 
   const closeModal = () => {
     setSelectedComplaint(null)
+    setSelectedMediaPreview(null)
   }
 
   useCloseOnEscape(Boolean(selectedComplaint), closeModal)
@@ -229,12 +261,19 @@ export default function ManageComplaints(){
     })
     y -= 18
 
+    const incidentDateRaw = record.date || record.incident_date || record.date_submitted
+    const incidentDateText = incidentDateRaw
+      ? (isNaN(new Date(incidentDateRaw).getTime())
+        ? incidentDateRaw
+        : new Date(incidentDateRaw).toLocaleDateString('en-US'))
+      : 'N/A'
+
     const details = [
       `Reference Number: ${record.ref || `C-${record.complaint_id}`}`,
       `Complainant: ${record.anonymous ? 'Anonymous' : (record.resident_name || 'Unknown')}`,
       `Category: ${record.category || record.category_id || 'General'}`,
       `Incident Location: ${record.location || 'N/A'}`,
-      `Date of Incident: ${record.date_submitted ? new Date(record.date_submitted).toLocaleDateString('en-US') : 'N/A'}`,
+      `Date of Incident: ${incidentDateText}`,
       `Date Submitted: ${new Date().toLocaleDateString('en-US')}`
     ]
 
@@ -748,6 +787,11 @@ export default function ManageComplaints(){
                   </div>
 
                   <div className="complaint-detail-row">
+                    <span className="detail-label">Incident Date:</span>
+                    <span className="detail-value">{selectedComplaint.date ? new Date(selectedComplaint.date).toLocaleDateString('en-US') : selectedComplaint.incident_date ? new Date(selectedComplaint.incident_date).toLocaleDateString('en-US') : '—'}</span>
+                  </div>
+
+                  <div className="complaint-detail-row">
                     <span className="detail-label">Submitted:</span>
                     <span className="detail-value">{selectedComplaint.date_submitted ? new Date(selectedComplaint.date_submitted).toLocaleDateString('en-US') : '—'}</span>
                   </div>
@@ -764,12 +808,51 @@ export default function ManageComplaints(){
                     </div>
                   )}
 
+                  {Array.isArray(selectedComplaint.images) && selectedComplaint.images.length > 0 && (
+                    <div className="complaint-detail-row full-width">
+                      <span className="detail-label">Attached Media:</span>
+                      <div className="complaint-media-grid">
+                        {normalizeComplaintMedia(selectedComplaint.images).map((media, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className="complaint-media-card complaint-media-clickable"
+                            onClick={() => openMediaPreview(media)}
+                          >
+                            {media.type?.startsWith('image/') ? (
+                              <img src={media.url} alt={media.name || `Attachment ${index + 1}`} />
+                            ) : (
+                              <video src={media.url} />
+                            )}
+                            <span className="media-name">{media.name || `Attachment ${index + 1}`}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <button className="modal-action-btn" type="button" onClick={() => handleDownloadPdf(selectedComplaint)}>
                     Download Complaint PDF
                   </button>
                   <button className="modal-action-btn" type="button" onClick={closeModal}>
                     Close
                   </button>
+                </div>
+              </div>
+            )}
+
+            {selectedMediaPreview && (
+              <div className="modal-overlay" onClick={() => setSelectedMediaPreview(null)}>
+                <div className="modal-card expanded-preview-modal" onClick={e => e.stopPropagation()}>
+                  <button className="modal-close-btn" type="button" onClick={() => setSelectedMediaPreview(null)}>
+                    ✕
+                  </button>
+                  {selectedMediaPreview.type?.startsWith('image/') ? (
+                    <img src={selectedMediaPreview.url} alt={selectedMediaPreview.name || 'Preview'} className="expanded-image" />
+                  ) : (
+                    <video src={selectedMediaPreview.url} controls className="expanded-video" />
+                  )}
+                  <p className="preview-filename">{selectedMediaPreview.name}</p>
                 </div>
               </div>
             )}

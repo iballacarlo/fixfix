@@ -459,15 +459,206 @@ html.dark .table-action-danger:hover{
 
 .modal-actions{
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 10px;
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.modal-action-btn{
+  min-width: 0;
+  white-space: normal;
+}
+
+@media(max-width:480px){
+  .modal-actions{
+    grid-template-columns: 1fr;
+  }
+}
+
+.complaint-media-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.complaint-media-card{
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 100px;
+  max-width: 120px;
+}
+
+.complaint-media-card img,
+.complaint-media-card video{
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  display: block;
+}
+
+.complaint-media-card video{
+  background: #000;
+}
+
+.media-name{
+  padding: 10px;
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.dark .complaint-media-card{
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 html.dark .modal-actions{
   border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.media-upload-section{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-upload-btn-small{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  color: rgb(37, 99, 235);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.file-upload-btn-small:hover{
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.complaint-media-card{
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--card, #ffffff);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 130px;
+}
+
+.complaint-media-card img,
+.complaint-media-card video{
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+.complaint-media-card video{
+  background: #000;
+}
+
+.complaint-media-clickable{
+  display: block;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.complaint-media-clickable img,
+.complaint-media-clickable video{
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+.complaint-edit-media-grid{
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+}
+
+.complaint-media-edit-card{
+  position: relative;
+}
+
+.media-edit-actions{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.remove-preview-btn{
+  background: rgba(185, 28, 28, 0.85);
+  border: 1px solid rgba(185, 28, 28, 0.8);
+  color: #fff;
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.media-name{
+  font-size: 0.75rem;
+  color: var(--muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expanded-preview-modal{
+  width: min(600px, calc(100vw - 40px));
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
+  padding: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--card, #fff);
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.expanded-image,
+.expanded-video{
+  width: 100%;
+  height: min(420px, calc(100vh - 140px));
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+.preview-filename{
+  color: var(--muted, #6b7280);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+html.dark .complaint-media-card,
+html.dark .expanded-preview-modal{
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* =========================

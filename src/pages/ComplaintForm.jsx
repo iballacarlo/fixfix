@@ -10,6 +10,18 @@ import mockApi from '../api/mockApi'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
+const getUserFullName = (user) => {
+  if (!user) return ''
+  if (user.name) return user.name
+  const parts = [
+    user.first_name || user.firstName || user.fname || '',
+    user.middle_name || user.middleName || user.middle || '',
+    user.last_name || user.lastName || user.lname || '',
+    user.suffix || user.suf || ''
+  ].map(part => part?.trim()).filter(Boolean)
+  return parts.join(' ')
+}
+
 export default function ComplaintForm(){
   const { user } = useAuth()
   const [categories, setCategories] = useState([])
@@ -38,6 +50,12 @@ export default function ComplaintForm(){
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [previews, setPreviews] = useState([]) // Store preview URLs
   const [expandedPreview, setExpandedPreview] = useState(null) // For expanded view
+
+  useEffect(() => {
+    if (user && !form.resident_name) {
+      setForm(prev => ({ ...prev, resident_name: getUserFullName(user) }))
+    }
+  }, [user])
 
   useCloseOnEscape(Boolean(expandedPreview), () => setExpandedPreview(null))
   useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
@@ -123,6 +141,28 @@ export default function ComplaintForm(){
     return Object.keys(e).length === 0
   }
 
+  const normalizeUploadedMedia = (files) => {
+    if(!Array.isArray(files)) return []
+    return files.map((file) => {
+      if(!file) return null
+      if(typeof file === 'string') {
+        return { url: file, type: 'image/*', name: 'Media file' }
+      }
+      if(file.url && typeof file.url === 'string') {
+        return { url: file.url, type: file.type || 'image/*', name: file.name || 'Media file' }
+      }
+      if(file instanceof File) {
+        return {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: URL.createObjectURL(file)
+        }
+      }
+      return null
+    }).filter(Boolean)
+  }
+
   async function submitToApi(){
     try {
       const residentName = form.resident_name || ''
@@ -135,7 +175,7 @@ export default function ComplaintForm(){
         location: form.location,
         date: form.date ? formatMmDdYyyy(form.date) : '',
         anonymous: form.anonymous,
-        images: form.images,
+        images: normalizeUploadedMedia(form.images),
         resident_name: residentName,
         respondent_name: form.respondent_name,
         userId: user?.id

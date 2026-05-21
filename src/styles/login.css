@@ -129,6 +129,13 @@ html.high-contrast{
   align-items:center;
   gap:12px;
   min-width:0;
+  text-decoration:none;
+  color:inherit;
+}
+
+.topbar-brand:hover,
+.topbar-brand:focus{
+  text-decoration:none;
 }
 
 .topbar-logo{

@@ -207,7 +207,7 @@ export default function Header(){
   const isMobile = () => typeof window !== 'undefined' && window.innerWidth <= 700
   const hasNewAfterViewed = unreadCount > lastSeenUnreadCount
   const showNotificationBadge = unreadCount > 0 && (!notificationsViewed || hasNewAfterViewed) && !notificationsOpen
-  const showAvatarBadge = unreadCount > 0 && (!notificationsViewed || hasNewAfterViewed) && !menuOpen
+  const showAvatarBadge = isMobile() && unreadCount > 0 && (!notificationsViewed || hasNewAfterViewed) && !menuOpen
 
   async function toggleNotifications(){
     const next = !notificationsOpen

@@ -15,8 +15,11 @@ export default function ComplaintHistory(){
   const [loading, setLoading] = useState(true)
   const [useBackend, setUseBackend] = useState(true)
   const [selectedComplaint, setSelectedComplaint] = useState(null)
+  const [selectedComplaintMedia, setSelectedComplaintMedia] = useState([])
+  const [expandedMediaPreview, setExpandedMediaPreview] = useState(null)
   const [isEditingComplaint, setIsEditingComplaint] = useState(false)
   const [editFormData, setEditFormData] = useState({})
+  const [editMediaPreviews, setEditMediaPreviews] = useState([])
   const [editTimeExceeded, setEditTimeExceeded] = useState(false)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, complaintId: null, complaint: null})
   const { user: authUser, loading: authLoading } = useAuth()
@@ -95,10 +98,81 @@ export default function ComplaintHistory(){
     loadComplaints()
   }, [authUser, authLoading])
 
+  const normalizeComplaintMedia = (images = []) => {
+    if(!Array.isArray(images)) return []
+    return images.map((media) => {
+      if(!media) return null
+      if(typeof media === 'string') {
+        return { url: media, type: media.startsWith('data:video') ? 'video/*' : 'image/*', name: 'Media file' }
+      }
+      if(media.url && typeof media.url === 'string') {
+        return {
+          url: media.url,
+          type: media.type || 'image/*',
+          name: media.name || 'Media file'
+        }
+      }
+      if(media instanceof File) {
+        return {
+          name: media.name,
+          type: media.type,
+          url: URL.createObjectURL(media)
+        }
+      }
+      if(media.previewUrl && typeof media.previewUrl === 'string') {
+        return {
+          url: media.previewUrl,
+          type: media.type || 'image/*',
+          name: media.name || 'Media file'
+        }
+      }
+      return null
+    }).filter(Boolean)
+  }
+
+  const createMediaPreview = (file) => {
+    if(!file) return null
+    return {
+      name: file.name || 'Media file',
+      type: file.type || 'image/*',
+      url: URL.createObjectURL(file)
+    }
+  }
+
+  const handleEditFileChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'))
+    if(validFiles.length !== files.length) {
+      alert('Only images and videos can be added to complaint media.')
+    }
+    const newMedia = validFiles.map(createMediaPreview).filter(Boolean)
+    setEditMediaPreviews(prev => [...prev, ...newMedia])
+    setEditFormData(prev => ({
+      ...prev,
+      images: [...(prev.images || []), ...newMedia]
+    }))
+    e.target.value = ''
+  }
+
+  const removeEditMedia = (index) => {
+    setEditMediaPreviews(prev => prev.filter((_, i) => i !== index))
+    setEditFormData(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  const openMediaPreview = (media) => {
+    setExpandedMediaPreview(media)
+  }
+
   const handleViewComplaint = (complaint) => {
     setSelectedComplaint(complaint)
+    setSelectedComplaintMedia(normalizeComplaintMedia(complaint.images))
+    setExpandedMediaPreview(null)
     setIsEditingComplaint(false)
     setEditFormData({})
+    setEditMediaPreviews([])
     setEditTimeExceeded(false)
     checkIfCanEdit(complaint)
   }
@@ -183,13 +257,16 @@ export default function ComplaintHistory(){
 
   const handleEditClick = () => {
     if(!editTimeExceeded && !isProcessStatus(selectedComplaint?.status)){
+      const normalizedMedia = normalizeComplaintMedia(selectedComplaint.images)
       setEditFormData({
         title: selectedComplaint.title || '',
         category: selectedComplaint.category || '',
         description: selectedComplaint.description || '',
         location: selectedComplaint.location || '',
-        notes: selectedComplaint.notes || ''
+        notes: selectedComplaint.notes || '',
+        images: normalizedMedia
       })
+      setEditMediaPreviews(normalizedMedia)
       setIsEditingComplaint(true)
     }
   }
@@ -219,6 +296,8 @@ export default function ComplaintHistory(){
       )
       setData(updatedData)
       setSelectedComplaint(saved)
+      setSelectedComplaintMedia(normalizeComplaintMedia(saved.images))
+      setEditMediaPreviews(normalizeComplaintMedia(saved.images))
       setIsEditingComplaint(false)
     } else {
       alert(result.message || 'Failed to update complaint')
@@ -228,10 +307,14 @@ export default function ComplaintHistory(){
   const handleCancelEdit = () => {
     setIsEditingComplaint(false)
     setEditFormData({})
+    setEditMediaPreviews([])
   }
 
   const closeModal = () => {
     setSelectedComplaint(null)
+    setSelectedComplaintMedia([])
+    setEditMediaPreviews([])
+    setExpandedMediaPreview(null)
     setIsEditingComplaint(false)
   }
 
@@ -404,6 +487,36 @@ export default function ComplaintHistory(){
                       </div>
                     )}
 
+                    {selectedComplaint.date && (
+                      <div className="complaint-detail-row">
+                        <span className="detail-label">Incident Date:</span>
+                        <span className="detail-value">{selectedComplaint.date}</span>
+                      </div>
+                    )}
+
+                    {selectedComplaintMedia.length > 0 && (
+                      <div className="complaint-detail-row full-width">
+                        <span className="detail-label">Attached Media:</span>
+                        <div className="complaint-media-grid">
+                          {selectedComplaintMedia.map((media, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              className="complaint-media-card complaint-media-clickable"
+                              onClick={() => openMediaPreview(media)}
+                            >
+                              {media.type?.startsWith('image/') ? (
+                                <img src={media.url} alt={media.name || `Media ${index + 1}`} />
+                              ) : (
+                                <video src={media.url} />
+                              )}
+                              <span className="media-name">{media.name || `Attachment ${index + 1}`}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {selectedComplaint.anonymous && (
                       <div className="complaint-detail-row">
                         <span className="detail-label">Anonymous:</span>
@@ -504,6 +617,65 @@ export default function ComplaintHistory(){
                       />
                     </div>
 
+                    <div className="complaint-detail-row full-width">
+                      <span className="detail-label">Edit Media:</span>
+                      <div className="media-upload-section">
+                        <input
+                          id="complaint-history-media-upload"
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={handleEditFileChange}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="complaint-history-media-upload"
+                          className="file-upload-btn-small"
+                          tabIndex={0}
+                          role="button"
+                          onKeyDown={(e) => {
+                            if(e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              document.getElementById('complaint-history-media-upload')?.click()
+                            }
+                          }}
+                        >
+                          Add media
+                        </label>
+
+                        {editMediaPreviews.length > 0 && (
+                          <div className="complaint-media-grid complaint-edit-media-grid">
+                            {editMediaPreviews.map((media, index) => (
+                              <div key={index} className="complaint-media-card complaint-media-edit-card">
+                                <button
+                                  type="button"
+                                  className="complaint-media-clickable"
+                                  onClick={() => openMediaPreview(media)}
+                                >
+                                  {media.type?.startsWith('image/') ? (
+                                    <img src={media.url} alt={media.name || `Attachment ${index + 1}`} />
+                                  ) : (
+                                    <video src={media.url} />
+                                  )}
+                                </button>
+                                <div className="media-edit-actions">
+                                  <span className="media-name">{media.name || `Attachment ${index + 1}`}</span>
+                                  <button
+                                    type="button"
+                                    className="remove-preview-btn"
+                                    onClick={() => removeEditMedia(index)}
+                                    aria-label="Remove media"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="modal-actions">
                       <button 
                         className="modal-action-btn modal-action-save"
@@ -522,6 +694,29 @@ export default function ComplaintHistory(){
                     </div>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {expandedMediaPreview && (
+            <div
+              className="modal-overlay"
+              onClick={() => setExpandedMediaPreview(null)}
+            >
+              <div className="modal-card expanded-preview-modal" onClick={(e) => e.stopPropagation()}>
+                <button
+                  className="modal-close-btn"
+                  onClick={() => setExpandedMediaPreview(null)}
+                  type="button"
+                >
+                  ✕
+                </button>
+                {expandedMediaPreview.type?.startsWith('image/') ? (
+                  <img src={expandedMediaPreview.url} alt={expandedMediaPreview.name || 'Preview'} className="expanded-image" />
+                ) : (
+                  <video src={expandedMediaPreview.url} controls className="expanded-video" />
+                )}
+                <p className="preview-filename">{expandedMediaPreview.name}</p>
               </div>
             </div>
           )}

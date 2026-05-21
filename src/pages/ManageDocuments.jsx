@@ -42,6 +42,7 @@ export default function ManageDocuments(){
     province: '',
     barangay: ''
   })
+  const maxBirthdate = new Date().toISOString().split('T')[0]
 
   const toggleDocumentStatus = (idx) => {
     setDocumentStatuses(prev => prev.map((doc, i) =>
@@ -509,6 +510,7 @@ export default function ManageDocuments(){
                             <label className="form-label">Birthdate</label>
                             <input
                               type="date"
+                              max={maxBirthdate}
                               className="ui-input"
                               value={documentFields.birthdate || ''}
                               onChange={e => handleFieldChange('birthdate', e.target.value)}

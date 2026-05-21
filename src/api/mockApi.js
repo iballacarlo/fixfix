@@ -350,6 +350,25 @@ function markAllNotificationsRead(user){
   })
 }
 
+function removeNotificationsByDataKey(key, value){
+  if(!key) return []
+  const list = load(KEY_NOTIFICATIONS)
+  const filtered = list.filter(item => {
+    if(!item || !item.data) return true
+    return String(item.data[key]) !== String(value)
+  })
+  save(KEY_NOTIFICATIONS, filtered)
+  return filtered
+}
+
+function removeNotificationsForComplaint(complaintId){
+  return removeNotificationsByDataKey('complaint_id', complaintId)
+}
+
+function removeNotificationsForDocumentRequest(requestId){
+  return removeNotificationsByDataKey('request_id', requestId)
+}
+
 function isOwnedBy(item, currentUser){
   if(!item || !currentUser) return false
 
@@ -476,9 +495,7 @@ function findUserByEmail(email){
 
 const api = {
   // =========================
-  // AUTH
-  // =========================
-
+  // AU
   register(data){
     const users = load(KEY_USERS)
 
@@ -509,6 +526,14 @@ const api = {
       suffix: data.suffix || '',
 
       gender: data.gender || '',
+      birthdate: data.birthdate || '',
+
+      phase: data.phase || '',
+      street: data.street || '',
+      block: data.block || '',
+      lot: data.lot || '',
+
+      address: data.address || '',
 
       email: data.email,
       password: data.password,
@@ -710,12 +735,34 @@ const api = {
 
       notes: c.notes || '',
       images: Array.isArray(c.images)
-        ? c.images
+        ? c.images.map((image) => {
+            if(!image) return null
+            if(typeof image === 'string') {
+              return { url: image, type: 'image/*', name: 'Media file' }
+            }
+            if(image.url && typeof image.url === 'string') {
+              return {
+                url: image.url,
+                type: image.type || 'image/*',
+                name: image.name || 'Media file',
+                size: image.size || 0
+              }
+            }
+            if(image instanceof File) {
+              return {
+                name: image.name,
+                type: image.type,
+                size: image.size,
+                url: URL.createObjectURL(image)
+              }
+            }
+            return null
+          }).filter(Boolean)
         : [],
 
       status: c.status || 'Submitted',
 
-      date: todayYmd(),
+      date: c.date || todayYmd(),
 
       created: timestamp,
       created_at: timestamp,
@@ -772,6 +819,20 @@ const api = {
 
     list[idx].status = status
     list[idx].updated_at = nowIso()
+
+    const ownerId = list[idx].resident_id || list[idx].user_id || list[idx].owner_id
+    if(ownerId){
+      const title = list[idx].title || list[idx].category || list[idx].ref || 'Complaint'
+      addNotification({
+        targetUserId: ownerId,
+        message: `Your complaint "${title}" status is now ${status}.`, 
+        category: 'complaint_status',
+        data: {
+          complaint_id: list[idx].complaint_id,
+          status
+        }
+      })
+    }
 
     save(KEY_COMPLAINTS, list)
 
@@ -882,6 +943,7 @@ const api = {
     list.splice(foundIdx, 1)
 
     save(KEY_COMPLAINTS, list)
+    removeNotificationsForComplaint(complaint.complaint_id || complaint.id || complaint.numericId)
 
     return {
       success: true
@@ -980,7 +1042,6 @@ const api = {
       name: d.name || '',
       birthdate: d.birthdate || '',
       address: d.address || '',
-      business_name: d.business_name || '',
       notes: d.notes || '',
 
       status: d.status || 'Submitted',
@@ -1042,6 +1103,24 @@ const api = {
 
     list[idx].status = status
     list[idx].updated_at = nowIso()
+
+    const ownerId = list[idx].resident_id || list[idx].user_id || list[idx].owner_id
+    if(ownerId){
+      const label = list[idx].document_type || list[idx].type || list[idx].reference_number || 'Document request'
+      const message = status === 'Released'
+        ? `Your document request "${label}" has been released and is ready for pickup at the barangay.`
+        : `Your document request "${label}" status is now ${status}.`
+
+      addNotification({
+        targetUserId: ownerId,
+        message,
+        category: 'document_status',
+        data: {
+          request_id: list[idx].request_id,
+          status
+        }
+      })
+    }
 
     save(KEY_DOCS, list)
 
@@ -1152,6 +1231,7 @@ const api = {
     list.splice(foundIdx, 1)
 
     save(KEY_DOCS, list)
+    removeNotificationsForDocumentRequest(doc.request_id || doc.id || doc.numericId)
 
     return {
       success: true

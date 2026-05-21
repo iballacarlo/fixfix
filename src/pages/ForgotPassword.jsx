@@ -128,7 +128,7 @@ export default function ForgotPassword(){
     <div className="login-shell">
       <header className="login-topbar">
         <div className="topbar-left">
-          <div className="topbar-brand">
+          <Link to="/login" className="topbar-brand" aria-label="Go to login page">
             <img
               src="/src/assets/Bacoor.png"
               onError={(e) => {
@@ -143,7 +143,7 @@ export default function ForgotPassword(){
               <div className="brand-kicker">Barangay</div>
               <div className="brand-name">Mambog II</div>
             </div>
-          </div>
+          </Link>
         </div>
 
         <div className="topbar-center">

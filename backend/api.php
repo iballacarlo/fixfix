@@ -74,6 +74,36 @@ function updateUserPassword($pdo, $role, $id, $hash){
   }
 }
 
+function restoreTestAccounts($pdo){
+  $adminEmail = 'admin@gmail.com';
+  $adminPass = '123';
+  $stmt = $pdo->prepare('SELECT staff_id FROM Staff WHERE email = ?');
+  $stmt->execute([$adminEmail]);
+  $admin = $stmt->fetch();
+  $adminHash = password_hash($adminPass, PASSWORD_BCRYPT);
+  if($admin){
+    $pdo->prepare('UPDATE Staff SET full_name = ?, role = ?, password = ?, contact_number = ?, account_status = ?, suspension_end_date = NULL WHERE staff_id = ?')
+      ->execute(['Admin', 'Admin', $adminHash, '0000000000', 'Active', $admin['staff_id']]);
+  } else {
+    $pdo->prepare('INSERT INTO Staff (full_name, role, email, password, contact_number, account_status) VALUES (?, ?, ?, ?, ?, ?)')
+      ->execute(['Admin', 'Admin', $adminEmail, $adminHash, '0000000000', 'Active']);
+  }
+
+  $resEmail = 'carlo@gmail.com';
+  $resPass = '123';
+  $stmt = $pdo->prepare('SELECT resident_id FROM Resident WHERE email = ?');
+  $stmt->execute([$resEmail]);
+  $resident = $stmt->fetch();
+  $residentHash = password_hash($resPass, PASSWORD_BCRYPT);
+  if($resident){
+    $pdo->prepare('UPDATE Resident SET first_name = ?, last_name = ?, birth_date = ?, gender = ?, address = ?, contact_number = ?, password = ?, account_status = ?, suspension_end_date = NULL WHERE resident_id = ?')
+      ->execute(['Carlo', 'Resident', '2000-01-01', 'Male', 'Sample Address', '0000000000', $residentHash, 'Active', $resident['resident_id']]);
+  } else {
+    $pdo->prepare('INSERT INTO Resident (first_name, middle_name, last_name, birth_date, gender, address, contact_number, email, password, account_status, registration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+      ->execute(['Carlo', '', 'Resident', '2000-01-01', 'Male', 'Sample Address', '0000000000', $resEmail, $residentHash, 'Active']);
+  }
+}
+
 function createNotification($pdo, $residentId, $message, $type = 'info'){
   $stmt = $pdo->prepare('INSERT INTO Notification (resident_id, message, type, is_read, date_created) VALUES (?, ?, ?, FALSE, NOW())');
   $stmt->execute([$residentId, $message, $type]);
@@ -122,7 +152,7 @@ function getUnreadNotificationCount($pdo, $user){
     $stmt = $pdo->prepare('SELECT COUNT(*) AS c FROM Notification WHERE resident_id IS NULL AND is_read = FALSE');
     $stmt->execute([]);
   } else {
-    $stmt = $pdo->prepare('SELECT COUNT(*) AS c FROM Notification WHERE resident_id = ? AND is_read = FALSE');
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS c FROM Notification WHERE resident_id = ? AND is_rezad = FALSE');
     $stmt->execute([$user['id']]);
   }
   $row = $stmt->fetch();
@@ -150,6 +180,9 @@ if($uri === '/register' && $method === 'POST'){
 if($uri === '/login' && $method === 'POST'){
   $data = json_decode(file_get_contents('php://input'), true);
   if(empty($data['email']) || empty($data['password'])) json(['success'=>false,'message'=>'Email and password required']);
+  if(in_array(strtolower(trim($data['email'])), ['admin@gmail.com', 'carlo@gmail.com'], true)){
+    restoreTestAccounts($pdo);
+  }
   // try staff
   $stmt = $pdo->prepare('SELECT staff_id, full_name, email, password, account_status, suspension_end_date FROM Staff WHERE email = ?');
   $stmt->execute([$data['email']]);
@@ -282,23 +315,7 @@ if($uri === '/reset-password' && $method === 'POST'){
 
 // Route: /seed - development helper to create/hash test accounts
 if($uri === '/seed' && $method === 'GET'){
-  // Remove and recreate the two requested test accounts
-  $adminEmail = 'admin@gmail.com';
-  $adminPass = '123';
-  // delete any existing staff with that email
-  $pdo->prepare('DELETE FROM Staff WHERE email = ?')->execute([$adminEmail]);
-  $hp = password_hash($adminPass, PASSWORD_BCRYPT);
-  $pdo->prepare('INSERT INTO Staff (full_name, role, email, password, contact_number, account_status) VALUES (?, ?, ?, ?, ?, ?)')
-    ->execute(['Admin','Admin',$adminEmail,$hp,'0000000000','Active']);
-
-  $resEmail = 'carlo@gmail.com';
-  $resPass = '123';
-  // delete any existing resident with that email
-  $pdo->prepare('DELETE FROM Resident WHERE email = ?')->execute([$resEmail]);
-  $hp = password_hash($resPass, PASSWORD_BCRYPT);
-  $pdo->prepare('INSERT INTO Resident (first_name, middle_name, last_name, birth_date, gender, address, contact_number, email, password, account_status, registration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
-    ->execute(['Carlo', '', 'Resident', '2000-01-01', 'Male', 'Sample Address', '0000000000', $resEmail, $hp, 'Active']);
-
+  restoreTestAccounts($pdo);
   json(['success'=>true,'message'=>'Recreated test accounts: admin@gmail.com / 123 and carlo@gmail.com / 123']);
 }
 
@@ -351,10 +368,23 @@ if(preg_match('#^/complaints/(\d+)$#', $uri, $m) && in_array($method, ['PUT','PA
   $data = json_decode(file_get_contents('php://input'), true);
   $fields = [];
   $vals = [];
-  if(isset($data['status'])){ $fields[] = 'status = ?'; $vals[] = $data['status']; }
+  $statusUpdate = false;
+  $newStatus = null;
+  if(isset($data['status'])){ $fields[] = 'status = ?'; $vals[] = $data['status']; $statusUpdate = true; $newStatus = $data['status']; }
   if(isset($data['assigned_staff_id'])){ $fields[] = 'assigned_staff_id = ?'; $vals[] = $data['assigned_staff_id']; }
   if(isset($data['resolution_notes'])){ $fields[] = 'resolution_notes = ?'; $vals[] = $data['resolution_notes']; }
   if(count($fields) === 0) json(['success'=>false,'message'=>'Nothing to update']);
+
+  if($statusUpdate){
+    $stmt = $pdo->prepare('SELECT resident_id, title, description FROM Complaint WHERE complaint_id = ?');
+    $stmt->execute([$id]);
+    $complaint = $stmt->fetch();
+    if($complaint && !empty($complaint['resident_id'])){
+      $title = trim($complaint['title'] ?: $complaint['description'] ?: 'Complaint');
+      createNotification($pdo, intval($complaint['resident_id']), 'Your complaint "' . $title . '" status is now ' . $newStatus . '.', 'complaint_status');
+    }
+  }
+
   $vals[] = $id;
   $sql = 'UPDATE Complaint SET '.implode(', ', $fields).' WHERE complaint_id = ?';
   $pdo->prepare($sql)->execute($vals);
@@ -409,9 +439,25 @@ if(preg_match('#^/docs/(\d+)$#', $uri, $m) && in_array($method, ['PUT','PATCH','
   $data = json_decode(file_get_contents('php://input'), true);
   $fields = [];
   $vals = [];
-  if(isset($data['status'])){ $fields[] = 'status = ?'; $vals[] = $data['status']; }
+  $statusUpdate = false;
+  $newStatus = null;
+  if(isset($data['status'])){ $fields[] = 'status = ?'; $vals[] = $data['status']; $statusUpdate = true; $newStatus = $data['status']; }
   if(isset($data['processed_by'])){ $fields[] = 'processed_by = ?'; $vals[] = $data['processed_by']; }
   if(count($fields) === 0) json(['success'=>false,'message'=>'Nothing to update']);
+
+  if($statusUpdate){
+    $stmt = $pdo->prepare('SELECT resident_id, reference_number, document_type FROM Document_Request WHERE request_id = ?');
+    $stmt->execute([$id]);
+    $request = $stmt->fetch();
+    if($request && !empty($request['resident_id'])){
+      $label = trim($request['document_type'] ?: $request['reference_number'] ?: 'Document request');
+      $message = $newStatus === 'Released'
+        ? 'Your document request "' . $label . '" has been released and is ready for pickup at the barangay.'
+        : 'Your document request "' . $label . '" status is now ' . $newStatus . '.';
+      createNotification($pdo, intval($request['resident_id']), $message, 'document_status');
+    }
+  }
+
   $vals[] = $id;
   $sql = 'UPDATE Document_Request SET '.implode(', ', $fields).' WHERE request_id = ?';
   $pdo->prepare($sql)->execute($vals);

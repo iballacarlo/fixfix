@@ -7,6 +7,7 @@ import { useSettings } from '../context/SettingsContext'
 import '../styles/login.css'
 import Logo from '../assets/Bacoor.png'
 import { addressData } from '../data/addressData'
+// use AuthContext.register for creating account + auto-login
 
 export default function Register(){
   const { register } = useAuth()
@@ -23,6 +24,7 @@ export default function Register(){
     middle: '',
     last: '',
     suffix: '',
+    birthdate: '',
     gender: '',
     phase: '',
     street: '',
@@ -46,7 +48,12 @@ export default function Register(){
 
   function isStepValid(step){
     if(step === 0){
-      return form.first.trim() && form.last.trim() && form.gender.trim()
+      return (
+        form.first.trim() &&
+        form.last.trim() &&
+        form.birthdate.trim() &&
+        form.gender.trim()
+      )
     }
 
     if(step === 1){
@@ -64,6 +71,10 @@ export default function Register(){
     if(step === 0){
       if(!isStepValid(0)){
         setErr('Please complete all personal information before continuing.')
+        return false
+      }
+      if(form.birthdate && new Date(form.birthdate) > new Date()){
+        setErr('Birthdate cannot be in the future.')
         return false
       }
     }
@@ -114,6 +125,8 @@ export default function Register(){
     form.confirm.length > 0 &&
     form.password !== form.confirm
 
+  const maxBirthdate = useMemo(() => new Date().toISOString().split('T')[0], [])
+
   async function handle(e){
     e.preventDefault()
     setErr('')
@@ -122,23 +135,37 @@ export default function Register(){
       return
     }
 
-    const fullName =
-      `${form.first} ${form.middle ? form.middle + ' ' : ''}${form.last}${form.suffix ? ' ' + form.suffix : ''}`.trim()
+    const fullAddress = `${form.phase}, ${form.street}, Block ${form.block}, Lot ${form.lot}`
 
-    const res = await register({
-      first_name: form.first,
-      middle_name: form.middle,
-      last_name: form.last,
-      suffix: form.suffix,
-      gender: form.gender,
-      email: form.email,
-      password: form.password,
-      address: `${form.phase}, ${form.street}, Block ${form.block}, Lot ${form.lot}`
-    })
+    try {
+      // call AuthContext.register so token and user are set on success
+      const result = await register({
+        first_name: form.first,
+        middle_name: form.middle,
+        last_name: form.last,
+        suffix: form.suffix || '',
 
-    if(res.ok) navigate('/dashboard')
-    else setErr(res.message || 'Registration failed.')
+        birth_date: form.birthdate,
+        gender: form.gender,
+        address: fullAddress,
+
+        email: form.email,
+        password: form.password
+      })
+
+      if(result.ok){
+        // registration succeeded and user is signed in; go to resident dashboard
+        navigate('/dashboard')
+      } else {
+        setErr(result.message || 'Registration failed')
+      }
+
+    } catch(err){
+      console.error(err)
+      setErr(err.response?.data?.message || err.message || 'Server error')
+    }
   }
+
 
   useEffect(() => {
     function onDown(e){
@@ -171,7 +198,7 @@ export default function Register(){
     <div className="login-shell register-shell">
       <header className="login-topbar">
         <div className="topbar-left">
-          <div className="topbar-brand">
+          <Link to="/login" className="topbar-brand" aria-label="Go to login page">
             <img
               src={Logo}
               alt="City of Bacoor logo"
@@ -179,10 +206,10 @@ export default function Register(){
             />
 
             <div className="brand-copy">
-              <div className="brand-kicker">Municipality</div>
-              <div className="brand-name">City of Bacoor</div>
+              <div className="brand-kicker">Barangay</div>
+              <div className="brand-name">Mambog II</div>
             </div>
-          </div>
+          </Link>
         </div>
 
         <div className="topbar-center">
@@ -336,6 +363,14 @@ export default function Register(){
                     onChange={e => setField('suffix', e.target.value)}
                     placeholder="Optional"
                     autoComplete="honorific-suffix"
+                  />
+
+                  <InputField
+                    label="Birthdate *"
+                    type="date"
+                    max={maxBirthdate}
+                    value={form.birthdate || ''}
+                    onChange={e => setField('birthdate', e.target.value)}
                   />
 
                   <div className="form-group">

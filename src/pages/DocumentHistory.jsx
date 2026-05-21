@@ -11,6 +11,8 @@ export default function DocumentHistory(){
 
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('All')
+  const [q, setQ] = useState('')
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [isEditingDocument, setIsEditingDocument] = useState(false)
   const [editFormData, setEditFormData] = useState({})
@@ -18,6 +20,16 @@ export default function DocumentHistory(){
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, docId: null, doc: null})
   const { user: authUser, loading: authLoading } = useAuth()
   const currentUser = authUser || mockApi.getCurrentUser()
+  const maxBirthdate = new Date().toISOString().split('T')[0]
+
+  const list = data.filter(item =>
+    (filter === 'All' || String(item.status || '').toLowerCase() === filter.toLowerCase()) &&
+    (q === '' ||
+      String(item.reference_number || item.request_id || item.id || '').toLowerCase().includes(q.toLowerCase()) ||
+      String(item.document_type || '').toLowerCase().includes(q.toLowerCase()) ||
+      String(item.name || item.resident_name || item.resident_id || '').toLowerCase().includes(q.toLowerCase())
+    )
+  )
 
   const getOwnerId = (item) => {
     if(!item) return null
@@ -244,9 +256,31 @@ export default function DocumentHistory(){
 
           <div className="history-card">
 
+            <div className="history-controls">
+              <div className="filter-group">
+                <select
+                  className="ui-input"
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                >
+                  <option>All</option>
+                  <option>Submitted</option>
+                  <option>Released</option>
+                  <option>Received</option>
+                </select>
+
+                <input
+                  className="ui-input"
+                  placeholder="Search by reference, type, or name"
+                  value={q}
+                  onChange={e => setQ(e.target.value)}
+                />
+              </div>
+            </div>
+
             {loading ? (
               <div className="empty-state">Loading documents...</div>
-            ) : data.length === 0 ? (
+            ) : list.length === 0 ? (
               <div className="empty-state">No document requests found.</div>
             ) : (
               <div className="table-wrap">
@@ -262,7 +296,7 @@ export default function DocumentHistory(){
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map(d => (
+                    {list.map(d => (
                       <tr key={documentIdToString(getDocumentId(d)) || d.reference_number || d.id}>
                         <td>{d.reference_number}</td>
                         <td>{d.name || d.resident_id || '—'}</td>
@@ -453,6 +487,7 @@ export default function DocumentHistory(){
                       <span className="detail-label">Birthdate:</span>
                       <input
                         type="date"
+                        max={maxBirthdate}
                         className="edit-field"
                         value={editFormData.birthdate || ''}
                         onChange={(e) => handleEditFieldChange('birthdate', e.target.value)}

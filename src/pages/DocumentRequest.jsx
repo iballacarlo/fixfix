@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
@@ -17,6 +17,18 @@ const DOC_TYPES = [
   'Certificate of Indigency',
 ]
 
+const getUserFullName = (user) => {
+  if (!user) return ''
+  if (user.name) return user.name
+  const parts = [
+    user.first_name || user.firstName || user.fname || '',
+    user.middle_name || user.middleName || user.middle || '',
+    user.last_name || user.lastName || user.lname || '',
+    user.suffix || user.suf || ''
+  ].map(part => part?.trim()).filter(Boolean)
+  return parts.join(' ')
+}
+
 export default function DocumentRequest(){
   const [type, setType] = useState('Barangay Clearance')
   const [purpose, setPurpose] = useState('')
@@ -26,6 +38,7 @@ export default function DocumentRequest(){
   const [street, setStreet] = useState('')
   const [block, setBlock] = useState('')
   const [lot, setLot] = useState('')
+  const maxBirthdate = new Date().toISOString().split('T')[0]
 
   const formatMmDdYyyy = (value) => {
     const date = new Date(value)
@@ -36,16 +49,55 @@ export default function DocumentRequest(){
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submittedRequest, setSubmittedRequest] = useState(null)
 
+  const { user } = useAuth()
+
+  useEffect(() => {
+  if (!user) return
+
+  setName((prev) => prev || getUserFullName(user))
+
+  setBirthdate(prev =>
+    prev ||
+    user.birthdate ||
+    user.birth_date ||
+    ''
+  )
+
+  setPhase(prev =>
+    prev ||
+    user.phase ||
+    ''
+  )
+
+  setStreet(prev =>
+    prev ||
+    user.street ||
+    ''
+  )
+
+  setBlock(prev =>
+    prev ||
+    user.block ||
+    ''
+  )
+
+  setLot(prev =>
+    prev ||
+    user.lot ||
+    ''
+  )
+
+  }, [user])
+
   useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
 
   const nav = useNavigate()
-  const { user } = useAuth()
-
   function validate(){
     const e = {}
     if(!name.trim()) e.name = 'Name is required'
     if(!birthdate.trim()) e.birthdate = 'Birthdate is required'
     else if(Number.isNaN(new Date(birthdate).getTime())) e.birthdate = 'Birthdate must be valid'
+    else if(new Date(birthdate) > new Date()) e.birthdate = 'Birthdate cannot be in the future'
     if(!phase.trim()) e.phase = 'Phase is required'
     if(!street.trim()) e.street = 'Street is required'
     if(!block.trim()) e.block = 'Block is required'
@@ -226,6 +278,7 @@ export default function DocumentRequest(){
               <div className="form-field">
                 <input
                   type="date"
+                  max={maxBirthdate}
                   className={`ui-input ${errors.birthdate ? 'ui-error' : ''}`}
                   value={birthdate}
                   onChange={e => setBirthdate(e.target.value)}
