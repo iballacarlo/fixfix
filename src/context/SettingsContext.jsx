@@ -12,7 +12,6 @@ export function SettingsProvider({ children }){
   const [dark, setDark] = useState(false)
   const [contrast, setContrast] = useState(false)
   const [fontSize, setFontSize] = useState('small')
-  const [tts, setTts] = useState(false)
   const [screenReader, setScreenReader] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
@@ -31,7 +30,6 @@ export function SettingsProvider({ children }){
     setDark(saved.dark !== undefined ? saved.dark : false)
     setContrast(saved.contrast !== undefined ? saved.contrast : false)
     setFontSize(saved.fontSize !== undefined ? saved.fontSize : 'small')
-    setTts(saved.tts !== undefined ? saved.tts : false)
     setScreenReader(saved.screenReader !== undefined ? saved.screenReader : false)
     setLoaded(true)
   }, [storageKey])
@@ -60,19 +58,128 @@ export function SettingsProvider({ children }){
   }, [fontSize])
 
   useEffect(() => {
-    if(tts && window.speechSynthesis){
-      const msg = new SpeechSynthesisUtterance(
-        'Accessibility: Text to speech enabled'
+    if (!window.speechSynthesis) return
+
+    if (screenReader) {
+      const activateMsg = new SpeechSynthesisUtterance(
+        'Screen reader mode enabled. Focus elements to hear labels and roles.'
       )
       window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(msg)
+      window.speechSynthesis.speak(activateMsg)
+    } else {
+      window.speechSynthesis.cancel()
     }
-  }, [tts])
+  }, [screenReader])
+
+  useEffect(() => {
+    if (!screenReader || !window.speechSynthesis) return
+
+    const describeElement = (element) => {
+      const ariaLabel = element.getAttribute('aria-label')
+      if (ariaLabel) return ariaLabel.trim()
+
+      const labelledBy = element.getAttribute('aria-labelledby')
+      if (labelledBy) {
+        const labelElement = document.getElementById(labelledBy)
+        if (labelElement) return labelElement.textContent.trim()
+      }
+
+      if (element instanceof HTMLInputElement) {
+        const t = element.type
+        if (['submit', 'button', 'reset'].includes(t)) {
+          return element.value?.trim() || ''
+        }
+        if (t === 'checkbox' || t === 'radio') {
+          return (element.labels?.[0]?.textContent || element.value || '').trim()
+        }
+        if (t === 'date') {
+          return (element.labels?.[0]?.textContent || element.placeholder || element.value || '').trim()
+        }
+        // text-like inputs
+        if (['text', 'email', 'search', 'tel', 'password', 'number'].includes(t)) {
+          return (element.labels?.[0]?.textContent || element.placeholder || element.value || '').trim()
+        }
+      }
+
+      if (element instanceof HTMLTextAreaElement) {
+        return (element.getAttribute('aria-label') || element.placeholder || element.textContent || '').trim()
+      }
+
+      if (element.alt) return element.alt.trim()
+      if (element.title) return element.title.trim()
+      return element.textContent?.trim() || ''
+    }
+
+    const describeRole = (element) => {
+      const explicit = element.getAttribute('role')
+      if (explicit) return explicit
+      const tag = element.tagName.toLowerCase()
+      if (tag === 'button') return 'button'
+      if (tag === 'a' && element.hasAttribute('href')) return 'link'
+      if (tag === 'input') {
+        const t = element.type
+        // detect switch-style controls: wrapped in .switch or explicit role
+        if (element.getAttribute('role') === 'switch' || element.closest && element.closest('.switch')) return 'switch'
+        if (t === 'checkbox') return 'checkbox'
+        if (t === 'radio') return 'radio button'
+        if (t === 'date') return 'date field'
+        if (['submit', 'button', 'reset'].includes(t)) return 'button'
+        if (['text', 'email', 'search', 'tel', 'password', 'number'].includes(t)) return 'text field'
+        return 'input field'
+      }
+      if (tag === 'select') return 'dropdown'
+      if (tag === 'textarea') return 'text area'
+      return ''
+    }
+
+    const handleFocusIn = (event) => {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+      if (target === document.body) return
+
+      const label = describeElement(target)
+      if (!label) return
+
+      const role = describeRole(target)
+      let announcement = label
+      if (role) {
+        if (role === 'switch') {
+          announcement = `${label}, ${target.checked ? 'on' : 'off'} switch`
+        } else if (role === 'checkbox') {
+          announcement = `${label}, ${target.checked ? 'checked' : 'not checked'} checkbox`
+        } else if (role === 'radio button') {
+          announcement = `${label}, ${target.checked ? 'selected' : 'not selected'} radio button`
+        } else if (role === 'text field' || role === 'input field' || role === 'text area') {
+          const val = (target.value || '').toString()
+          announcement = val && target.type !== 'password' ? `${label}, ${role}, value ${val}` : `${label}, ${role}`
+        } else if (role === 'dropdown') {
+          const selected = target.options && target.options[target.selectedIndex] ? target.options[target.selectedIndex].textContent.trim() : ''
+          announcement = selected ? `${label}, dropdown, selected ${selected}` : `${label}, dropdown`
+        } else if (role === 'date field') {
+          announcement = target.value ? `${label}, date field, ${target.value}` : `${label}, date field`
+        } else {
+          announcement = `${label}, ${role}`
+        }
+      }
+
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(announcement)
+      utterance.rate = 1
+      utterance.pitch = 1
+      window.speechSynthesis.speak(utterance)
+    }
+
+    document.addEventListener('focusin', handleFocusIn, true)
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn, true)
+      window.speechSynthesis.cancel()
+    }
+  }, [screenReader])
 
   const saveSettings = () => {
     localStorage.setItem(
       storageKey,
-      JSON.stringify({ dark, contrast, fontSize, tts, screenReader })
+      JSON.stringify({ dark, contrast, fontSize, screenReader })
     )
   }
 
@@ -80,7 +187,6 @@ export function SettingsProvider({ children }){
     setDark(false)
     setContrast(false)
     setFontSize('small')
-    setTts(false)
     setScreenReader(false)
     // Save reset state to localStorage
     localStorage.setItem(
@@ -89,7 +195,6 @@ export function SettingsProvider({ children }){
         dark: false,
         contrast: false,
         fontSize: 'small',
-        tts: false,
         screenReader: false
       })
     )
@@ -101,7 +206,6 @@ export function SettingsProvider({ children }){
         dark, setDark,
         contrast, setContrast,
         fontSize, setFontSize,
-        tts, setTts,
         screenReader, setScreenReader,
         saveSettings,
         resetSettings

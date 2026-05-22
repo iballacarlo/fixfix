@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import '../styles/history.css'
@@ -6,6 +6,7 @@ import api from '../api/axios'
 import mockApi from '../api/mockApi'
 import StatusBadge from '../components/StatusBadge'
 import { useAuth } from '../context/AuthContext'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 
 export default function DocumentHistory(){
 
@@ -18,6 +19,10 @@ export default function DocumentHistory(){
   const [editFormData, setEditFormData] = useState({})
   const [editTimeExceeded, setEditTimeExceeded] = useState(false)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, docId: null, doc: null})
+  const [receivedConfirmModal, setReceivedConfirmModal] = useState({show: false})
+  const selectedDocumentRef = useRef(null)
+  const deleteConfirmRef = useRef(null)
+  const receivedConfirmRef = useRef(null)
   const { user: authUser, loading: authLoading } = useAuth()
   const currentUser = authUser || mockApi.getCurrentUser()
   const maxBirthdate = new Date().toISOString().split('T')[0]
@@ -145,6 +150,10 @@ export default function DocumentHistory(){
     setDeleteConfirmModal({show: false, docId: null, doc: null})
   }
 
+  useCloseOnEscape(Boolean(selectedDocument), closeModal, selectedDocumentRef)
+  useCloseOnEscape(deleteConfirmModal.show, cancelDeleteDocument, deleteConfirmRef)
+  useCloseOnEscape(receivedConfirmModal.show, () => setReceivedConfirmModal({show: false}), receivedConfirmRef)
+
   const handleEditClick = () => {
     const status = selectedDocument?.status || ''
 
@@ -198,8 +207,6 @@ export default function DocumentHistory(){
     setIsEditingDocument(false)
     setEditFormData({})
   }
-
-  const [receivedConfirmModal, setReceivedConfirmModal] = useState({show: false})
 
   const openReceivedConfirm = () => {
     setReceivedConfirmModal({show: true})
@@ -332,9 +339,12 @@ export default function DocumentHistory(){
           {selectedDocument && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Document details"
               onClick={closeModal}
             >
-              <div className="modal-card complaint-details-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card complaint-details-modal" ref={selectedDocumentRef} onClick={(e) => e.stopPropagation()}>
                 <button 
                   className="modal-close-btn"
                   onClick={closeModal}
@@ -410,11 +420,13 @@ export default function DocumentHistory(){
                     <div className="modal-actions">
                       {String(selectedDocument.status || '').toLowerCase().includes('released') && (
                         <button
-                          className="modal-action-btn modal-action-received"
+                          className="modal-action-btn modal-action-received mobile-checkmark"
                           onClick={openReceivedConfirm}
                           type="button"
+                          aria-label="Mark Received"
                         >
-                          Mark Received
+                          <span className="mobile-icon" aria-hidden="true">✓</span>
+                          <span className="mobile-label">Mark Received</span>
                         </button>
                       )}
 
@@ -544,9 +556,12 @@ export default function DocumentHistory(){
           {deleteConfirmModal.show && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm delete document request"
               onClick={cancelDeleteDocument}
             >
-              <div className="modal-card confirm-delete-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card confirm-delete-modal" ref={deleteConfirmRef} onClick={(e) => e.stopPropagation()}>
                 <div className="delete-modal-icon"></div>
                 <h2 className="modal-title">Delete Document Request?</h2>
                 <p className="delete-modal-message">
@@ -577,9 +592,12 @@ export default function DocumentHistory(){
           {receivedConfirmModal.show && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm received document"
               onClick={() => setReceivedConfirmModal({show: false})}
             >
-              <div className="modal-card confirm-delete-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card confirm-delete-modal" ref={receivedConfirmRef} onClick={(e) => e.stopPropagation()}>
                 <h2 className="modal-title">Mark Document as Received?</h2>
                 <p className="delete-modal-message">Are you sure you want to mark this document as received? Administrators will be notified.</p>
 

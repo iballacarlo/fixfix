@@ -7,7 +7,7 @@ import mockApi from '../api/mockApi'
 import './header.css'
 
 export default function Header(){
-  const { dark, setDark, contrast, setContrast } = useSettings()
+  const { dark, setDark, contrast, setContrast, screenReader, setScreenReader } = useSettings()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -122,6 +122,13 @@ export default function Header(){
 
   function toggleContrast(){
     setContrast(!contrast)
+    setMenuOpen(false)
+    setSettingsOpen(false)
+    setNotificationsOpen(false)
+  }
+
+  function toggleScreenReader(){
+    setScreenReader(!screenReader)
     setMenuOpen(false)
     setSettingsOpen(false)
     setNotificationsOpen(false)
@@ -301,11 +308,29 @@ export default function Header(){
 
           {settingsOpen && (
             <div className="settings-dropdown" role="menu" aria-label="Mobile display settings">
-              <button type="button" className="settings-item" onClick={toggleDark}>
+              <button
+                type="button"
+                className="settings-item"
+                onClick={toggleDark}
+                aria-label={dark ? 'Disable dark mode' : 'Enable dark mode'}
+              >
                 {dark ? 'Disable dark' : 'Enable dark'}
               </button>
-              <button type="button" className="settings-item" onClick={toggleContrast}>
+              <button
+                type="button"
+                className="settings-item"
+                onClick={toggleContrast}
+                aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
+              >
                 {contrast ? 'Disable contrast' : 'Enable contrast'}
+              </button>
+              <button
+                type="button"
+                className="settings-item"
+                onClick={toggleScreenReader}
+                aria-label={screenReader ? 'Disable screen reader mode' : 'Enable screen reader mode'}
+              >
+                {screenReader ? 'Disable screen reader' : 'Enable screen reader'}
               </button>
             </div>
           )}
@@ -317,8 +342,19 @@ export default function Header(){
             onClick={toggleDark}
             aria-pressed={dark}
             className="small"
+            aria-label={dark ? 'Disable dark mode' : 'Enable dark mode'}
           >
             {dark ? 'Dark' : 'Light'}
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleScreenReader}
+            aria-pressed={screenReader}
+            className="small"
+            aria-label={screenReader ? 'Disable screen reader mode' : 'Enable screen reader mode'}
+          >
+            {screenReader ? 'SR On' : 'SR'}
           </button>
 
           <button
@@ -326,6 +362,7 @@ export default function Header(){
             onClick={toggleContrast}
             aria-pressed={contrast}
             className="small"
+            aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
           >
             {contrast ? 'HighC' : 'Contrast'}
           </button>

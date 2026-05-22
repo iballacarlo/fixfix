@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
@@ -6,6 +6,7 @@ import '../styles/history.css'
 import api from '../api/axios'
 import mockApi from '../api/mockApi'
 import { useAuth } from '../context/AuthContext'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 
 export default function ComplaintHistory(){
 
@@ -22,6 +23,9 @@ export default function ComplaintHistory(){
   const [editMediaPreviews, setEditMediaPreviews] = useState([])
   const [editTimeExceeded, setEditTimeExceeded] = useState(false)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({show: false, complaintId: null, complaint: null})
+  const selectedComplaintRef = useRef(null)
+  const expandedMediaPreviewRef = useRef(null)
+  const deleteConfirmRef = useRef(null)
   const { user: authUser, loading: authLoading } = useAuth()
   const currentUser = authUser || mockApi.getCurrentUser()
 
@@ -321,6 +325,10 @@ export default function ComplaintHistory(){
     setIsEditingComplaint(false)
   }
 
+  useCloseOnEscape(Boolean(selectedComplaint), closeModal, selectedComplaintRef)
+  useCloseOnEscape(Boolean(expandedMediaPreview), () => setExpandedMediaPreview(null), expandedMediaPreviewRef)
+  useCloseOnEscape(deleteConfirmModal.show, cancelDeleteComplaint, deleteConfirmRef)
+
   const getStatusEmoji = (status) => {
     const normalized = (status || '').toLowerCase()
     if(normalized.includes('processed') || normalized.includes('resolved') || normalized.includes('approved')) return '🟢'
@@ -334,12 +342,36 @@ export default function ComplaintHistory(){
     statusText: `${item.status || 'Pending'} ${getStatusEmoji(item.status)}`
   }))
 
+  const doesComplaintMatchQuery = (complaint, query) => {
+    if(!query) return true
+    const lowerQuery = query.toLowerCase()
+    const fieldsToSearch = [
+      complaint.ref,
+      complaint.complaint_id?.toString(),
+      complaint.title,
+      complaint.category,
+      complaint.description,
+      complaint.location,
+      complaint.status,
+      complaint.notes,
+      complaint.resident_name,
+      complaint.name,
+      complaint.resident_id?.toString(),
+      complaint.respondent_name,
+      complaint.reference_number,
+      complaint.request_id?.toString(),
+      complaint.numericId?.toString()
+    ]
+
+    return fieldsToSearch.some(value =>
+      value !== undefined && value !== null &&
+      String(value).toLowerCase().includes(lowerQuery)
+    )
+  }
+
   const list = data.filter(item =>
     (filter === 'All' || item.status === filter) &&
-    (q === '' ||
-      item.complaint_id?.toString().includes(q) ||
-      item.title?.toLowerCase().includes(q.toLowerCase())
-    )
+    doesComplaintMatchQuery(item, q)
   )
 
   return (
@@ -428,9 +460,12 @@ export default function ComplaintHistory(){
           {selectedComplaint && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Complaint details"
               onClick={closeModal}
             >
-              <div className="modal-card complaint-details-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card complaint-details-modal" ref={selectedComplaintRef} onClick={(e) => e.stopPropagation()}>
                 <button 
                   className="modal-close-btn"
                   onClick={closeModal}
@@ -744,9 +779,12 @@ export default function ComplaintHistory(){
           {expandedMediaPreview && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Expanded media preview"
               onClick={() => setExpandedMediaPreview(null)}
             >
-              <div className="modal-card expanded-preview-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card expanded-preview-modal" ref={expandedMediaPreviewRef} onClick={(e) => e.stopPropagation()}>
                 <button
                   className="modal-close-btn"
                   onClick={() => setExpandedMediaPreview(null)}
@@ -768,9 +806,12 @@ export default function ComplaintHistory(){
           {deleteConfirmModal.show && (
             <div
               className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm delete complaint"
               onClick={cancelDeleteComplaint}
             >
-              <div className="modal-card confirm-delete-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card confirm-delete-modal" ref={deleteConfirmRef} onClick={(e) => e.stopPropagation()}>
                 <p className="delete-modal-message">
                   Are you sure you want to delete this complaint? This action cannot be undone.
                 </p>

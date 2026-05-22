@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
@@ -53,6 +53,7 @@ export default function DocumentRequest(){
   const [errors, setErrors] = useState({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submittedRequest, setSubmittedRequest] = useState(null)
+  const confirmModalRef = useRef(null)
 
   const { user } = useAuth()
 
@@ -102,7 +103,7 @@ export default function DocumentRequest(){
 
   }, [user])
 
-  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false), confirmModalRef)
 
   const nav = useNavigate()
   function validate(){
@@ -424,7 +425,7 @@ export default function DocumentRequest(){
               aria-label="Confirm document request"
               onClick={() => setConfirmOpen(false)}
             >
-              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card" ref={confirmModalRef} onClick={(e) => e.stopPropagation()}>
                 <h3>Confirm Request</h3>
                 <p>Are you sure you want to submit this document request?</p>
 

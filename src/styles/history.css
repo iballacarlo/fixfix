@@ -375,6 +375,10 @@ html.dark .danger-action{
 }
 
 .modal-action-btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   width: 100%;
   padding: 12px 16px;
   background: rgba(37, 99, 235, 0.1);
@@ -471,7 +475,28 @@ html.dark .table-action-danger:hover{
   white-space: normal;
 }
 
+.mobile-checkmark{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.mobile-checkmark .mobile-icon{
+  display: none;
+}
+
 @media(max-width:480px){
+  .mobile-checkmark .mobile-icon{
+    display: inline;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .mobile-checkmark .mobile-label{
+    display: none;
+  }
+
   .modal-actions{
     grid-template-columns: 1fr;
   }

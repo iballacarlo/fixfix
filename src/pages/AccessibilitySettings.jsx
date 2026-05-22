@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import { useSettings } from '../context/SettingsContext'
 import Button from '../components/Button'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 import '../styles/form.css'
 
 export default function AccessibilitySettings(){
@@ -10,7 +11,6 @@ export default function AccessibilitySettings(){
     dark, setDark,
     contrast, setContrast,
     fontSize, setFontSize,
-    tts, setTts,
     screenReader, setScreenReader,
     saveSettings,
     resetSettings
@@ -21,27 +21,13 @@ export default function AccessibilitySettings(){
   const [confirmAction, setConfirmAction] = useState(null)
   const modalRef = useRef(null)
 
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false), modalRef)
+
   useEffect(() => {
     if(!notice) return
     const timer = setTimeout(() => setNotice(''), 4000)
     return () => clearTimeout(timer)
   }, [notice])
-
-  useEffect(() => {
-    function onEsc(e){
-      if(e.key === 'Escape') setConfirmOpen(false)
-    }
-
-    if(confirmOpen){
-      document.addEventListener('keydown', onEsc)
-      document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('keydown', onEsc)
-      document.body.style.overflow = ''
-    }
-  }, [confirmOpen])
 
   function onOverlayClick(e){
     if(modalRef.current && !modalRef.current.contains(e.target)){
@@ -123,24 +109,8 @@ export default function AccessibilitySettings(){
 
               <div className="setting-row">
                 <div className="setting-info">
-                  <div className="setting-title">Text-to-Speech</div>
-                  <div className="setting-desc">Enable spoken feedback.</div>
-                </div>
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    aria-label={tts ? 'Disable text to speech' : 'Enable text to speech'}
-                    checked={tts}
-                    onChange={e => setTts(e.target.checked)}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="setting-row">
-                <div className="setting-info">
                   <div className="setting-title">Screen Reader Mode</div>
-                  <div className="setting-desc">Optimize layout for screen readers.</div>
+                  <div className="setting-desc">Enable spoken labels and roles while navigating.</div>
                 </div>
                 <label className="switch">
                   <input
@@ -161,6 +131,12 @@ export default function AccessibilitySettings(){
                       key={size}
                       type="button"
                       className={`font-chip ${fontSize === size ? 'active' : ''}`}
+                      aria-label={
+                        size === 'xlarge' ? 'Extra Large' :
+                        size === 'large' ? 'Large' :
+                        size === 'medium' ? 'Medium' :
+                        'Small'
+                      }
                       onClick={() => setFontSize(size)}
                     >
                       {size.toUpperCase()}

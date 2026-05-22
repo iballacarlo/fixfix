@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import Button from '../components/Button'
@@ -50,6 +50,8 @@ export default function ComplaintForm(){
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [previews, setPreviews] = useState([]) // Store preview URLs
   const [expandedPreview, setExpandedPreview] = useState(null) // For expanded view
+  const confirmModalRef = useRef(null)
+  const expandedPreviewRef = useRef(null)
 
   useEffect(() => {
     if (user && !form.resident_name) {
@@ -57,8 +59,8 @@ export default function ComplaintForm(){
     }
   }, [user])
 
-  useCloseOnEscape(Boolean(expandedPreview), () => setExpandedPreview(null))
-  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false))
+  useCloseOnEscape(Boolean(expandedPreview), () => setExpandedPreview(null), expandedPreviewRef)
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false), confirmModalRef)
 
   const nav = useNavigate()
 
@@ -431,7 +433,7 @@ export default function ComplaintForm(){
               className="modal-overlay"
               onClick={() => setExpandedPreview(null)}
             >
-              <div className="modal-card expanded-preview-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card expanded-preview-modal" ref={expandedPreviewRef} onClick={(e) => e.stopPropagation()}>
                 <button 
                   className="close-preview-btn"
                   onClick={() => setExpandedPreview(null)}
@@ -458,7 +460,7 @@ export default function ComplaintForm(){
               aria-label="Confirm complaint submission"
               onClick={() => setConfirmOpen(false)}
             >
-              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-card" ref={confirmModalRef} onClick={(e) => e.stopPropagation()}>
                 <h3>Confirm Submission</h3>
                 <p>Are you sure you want to submit this complaint?</p>
 

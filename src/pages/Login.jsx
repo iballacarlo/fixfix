@@ -15,7 +15,8 @@ export default function Login(){
   const {
     dark, setDark,
     contrast, setContrast,
-    fontSize, setFontSize
+    fontSize, setFontSize,
+    screenReader, setScreenReader
   } = useSettings()
 
   const [email, setEmail] = useState(() => localStorage.getItem('remember_email') || '')
@@ -131,19 +132,19 @@ export default function Login(){
           <button
             type="button"
             className="settings-btn"
-            aria-label="Open display settings"
+            aria-label="Open accessibility settings"
             aria-expanded={settingsOpen}
             onClick={() => setSettingsOpen(v => !v)}
-            title="Display settings"
+            title="Accessibility settings"
           >
             <span className="settings-gear">⚙</span>
             <span className="settings-text">Settings</span>
           </button>
 
           {settingsOpen && (
-            <div className="settings-panel" role="dialog" aria-label="Display settings">
+            <div className="settings-panel" role="dialog" aria-label="Accessibility settings">
               <div className="settings-head">
-                <strong>Display Settings</strong>
+                <strong>Accessibility Settings</strong>
                 <button
                   type="button"
                   className="settings-close"
@@ -152,23 +153,6 @@ export default function Login(){
                 >
                   ✕
                 </button>
-              </div>
-
-              <div className="settings-item">
-                <div className="settings-label">
-                  <span>High contrast</span>
-                  <small>Improve visibility and borders</small>
-                </div>
-
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
-                    checked={contrast}
-                    onChange={(e) => setContrast(e.target.checked)}
-                  />
-                  <span className="slider" />
-                </label>
               </div>
 
               <div className="settings-item">
@@ -188,7 +172,41 @@ export default function Login(){
                 </label>
               </div>
 
+              <div className="settings-item">
+                <div className="settings-label">
+                  <span>High contrast</span>
+                  <small>Improve visibility and borders</small>
+                </div>
+
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
+                    checked={contrast}
+                    onChange={(e) => setContrast(e.target.checked)}
+                  />
+                  <span className="slider" />
+                </label>
+              </div>
+
               <div className="settings-divider" />
+
+              <div className="settings-item">
+                <div className="settings-label">
+                  <span>Screen reader</span>
+                  <small>Enable spoken labels and roles while navigating</small>
+                </div>
+
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    aria-label={screenReader ? 'Disable screen reader mode' : 'Enable screen reader mode'}
+                    checked={screenReader}
+                    onChange={(e) => setScreenReader(e.target.checked)}
+                  />
+                  <span className="slider" />
+                </label>
+              </div>
 
               <div className="settings-label block">
                 <span>Font size</span>
@@ -201,6 +219,12 @@ export default function Login(){
                     key={opt.key}
                     type="button"
                     className={`chip ${fontSize === opt.key ? 'active' : ''}`}
+                    aria-label={
+                      opt.key === 'xlarge' ? 'Extra Large' :
+                      opt.key === 'large' ? 'Large' :
+                      opt.key === 'medium' ? 'Medium' :
+                      'Small'
+                    }
                     onClick={() => setFontSize(opt.key)}
                   >
                     {opt.label}

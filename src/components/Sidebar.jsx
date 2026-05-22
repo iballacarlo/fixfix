@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import './sidebar.css'
 import { useAuth } from '../context/AuthContext'
+import useCloseOnEscape from '../hooks/useCloseOnEscape'
 
 export default function Sidebar(){
   const { logout, user } = useAuth()
@@ -27,7 +28,10 @@ export default function Sidebar(){
   // Logout modal
   const [confirmOpen, setConfirmOpen] = useState(false)
   const modalRef = useRef(null)
+  const logoutModalRef = useRef(null)
   const navRef = useRef(null)
+
+  useCloseOnEscape(confirmOpen, () => setConfirmOpen(false), logoutModalRef)
 
   // Sidebar keyboard navigation
   function onSidebarNavKeyDown(e){
@@ -57,23 +61,6 @@ export default function Sidebar(){
     logout()
     navigate('/login')
   }
-
-  // Close modal on ESC + lock background scroll
-  useEffect(() => {
-    function onEsc(e){
-      if(e.key === 'Escape') setConfirmOpen(false)
-    }
-
-    if(confirmOpen){
-      document.addEventListener('keydown', onEsc)
-      document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('keydown', onEsc)
-      document.body.style.overflow = ''
-    }
-  }, [confirmOpen])
 
   // Close modal by clicking outside
   function onOverlayClick(e){
@@ -222,7 +209,7 @@ export default function Sidebar(){
           aria-label="Logout confirmation"
           onMouseDown={onOverlayClick}
         >
-          <div className="modal-card" ref={modalRef}>
+          <div className="modal-card" ref={logoutModalRef}>
             <h3>Confirm Logout</h3>
             <p>Are you sure you want to logout?</p>
 

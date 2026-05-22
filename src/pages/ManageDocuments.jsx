@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
@@ -35,6 +35,7 @@ export default function ManageDocuments(){
     { name: 'Residency Certificate', status: 'Disabled' }
   ])
   const [processingRequest, setProcessingRequest] = useState(null)
+  const processingModalRef = useRef(null)
   const [documentFields, setDocumentFields] = useState({
     name: '',
     birthdate: '',
@@ -189,7 +190,7 @@ export default function ManageDocuments(){
     setProcessingRequest(null)
   }
 
-  useCloseOnEscape(Boolean(processingRequest), closeProcessingModal)
+  useCloseOnEscape(Boolean(processingRequest), closeProcessingModal, processingModalRef)
 
   const wrapText = (text, maxChars = 72) => {
     return String(text || '').split('\n').flatMap(line => {
@@ -467,8 +468,8 @@ export default function ManageDocuments(){
             )}
 
             {processingRequest && (
-              <div className="modal-overlay" onClick={closeProcessingModal}>
-                <div className="modal-card complaint-details-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Process document request" onClick={closeProcessingModal}>
+                <div className="modal-card complaint-details-modal" ref={processingModalRef} onClick={e => e.stopPropagation()}>
                   <button className="modal-close-btn" type="button" onClick={closeProcessingModal}>
                     ✕
                   </button>

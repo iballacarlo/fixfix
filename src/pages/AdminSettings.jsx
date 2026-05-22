@@ -21,7 +21,6 @@ export default function AdminSettings(){
     dark, setDark,
     contrast, setContrast,
     fontSize, setFontSize,
-    tts, setTts,
     screenReader, setScreenReader,
     saveSettings,
     resetSettings
@@ -340,23 +339,8 @@ export default function AdminSettings(){
 
               <div className="setting-row">
                 <div className="setting-info">
-                  <div className="setting-title">Text-to-Speech</div>
-                  <div className="setting-desc">Enable spoken feedback.</div>
-                </div>
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={tts}
-                    onChange={(e) => setTts(e.target.checked)}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="setting-row">
-                <div className="setting-info">
                   <div className="setting-title">Screen Reader Mode</div>
-                  <div className="setting-desc">Optimize layout for screen readers.</div>
+                  <div className="setting-desc">Enable spoken labels and roles while navigating.</div>
                 </div>
                 <label className="switch">
                   <input
@@ -376,6 +360,12 @@ export default function AdminSettings(){
                       key={size}
                       type="button"
                       className={`font-chip ${fontSize === size ? 'active' : ''}`}
+                      aria-label={
+                        size === 'xlarge' ? 'Extra Large' :
+                        size === 'large' ? 'Large' :
+                        size === 'medium' ? 'Medium' :
+                        'Small'
+                      }
                       onClick={() => setFontSize(size)}
                     >
                       {size.toUpperCase()}
