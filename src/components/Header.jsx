@@ -349,22 +349,22 @@ export default function Header(){
 
           <button
             type="button"
-            onClick={toggleScreenReader}
-            aria-pressed={screenReader}
-            className="small"
-            aria-label={screenReader ? 'Disable screen reader mode' : 'Enable screen reader mode'}
-          >
-            {screenReader ? 'SR On' : 'SR'}
-          </button>
-
-          <button
-            type="button"
             onClick={toggleContrast}
             aria-pressed={contrast}
             className="small"
             aria-label={contrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
           >
             {contrast ? 'HighC' : 'Contrast'}
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleScreenReader}
+            aria-pressed={screenReader}
+            className="small"
+            aria-label={screenReader ? 'Disable screen reader mode' : 'Enable screen reader mode'}
+          >
+            {screenReader ? 'SR On' : 'SR'}
           </button>
         </div>
 

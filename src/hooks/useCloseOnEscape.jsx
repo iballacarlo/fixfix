@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const FOCUSABLE_SELECTORS = [
   'a[href]',
@@ -16,6 +16,12 @@ function getFocusableElements(container) {
 }
 
 export default function useCloseOnEscape(isOpen, onClose, modalRef = null) {
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -24,7 +30,7 @@ export default function useCloseOnEscape(isOpen, onClose, modalRef = null) {
     function handleKeyDown(event) {
       if (event.key === 'Escape' || event.key === 'Esc') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
 
@@ -65,5 +71,5 @@ export default function useCloseOnEscape(isOpen, onClose, modalRef = null) {
       document.body.style.overflow = originalBodyOverflow
       if (previousActiveElement?.focus) previousActiveElement.focus()
     }
-  }, [isOpen, onClose, modalRef])
+  }, [isOpen, modalRef])
 }

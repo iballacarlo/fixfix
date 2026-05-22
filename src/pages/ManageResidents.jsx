@@ -12,6 +12,9 @@ export default function ManageResidents(){
   const [items,setItems] = useState([])
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All')
   const [selectedForDelete, setSelectedForDelete] = useState(null)
   const [selectedForStatus, setSelectedForStatus] = useState(null)
 
@@ -32,6 +35,27 @@ export default function ManageResidents(){
   useEffect(()=>{ load() }, [])
 
   const statusOptions = ['Active', 'Suspended', 'Banned']
+
+  const handleSearch = () => {
+    setQuery(searchTerm.trim())
+  }
+
+  const filteredItems = items.filter(item => {
+    const statusMatch = statusFilter === 'All' || String(item.account_status || 'Unknown') === statusFilter
+    if(!statusMatch) return false
+
+    if(!query) return true
+
+    const normalizedQuery = query.toLowerCase()
+    const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase()
+    return [
+      String(item.resident_id || ''),
+      item.email || '',
+      fullName,
+      (item.first_name || ''),
+      (item.last_name || '')
+    ].some(value => String(value).toLowerCase().includes(normalizedQuery))
+  })
 
   async function confirmChangeStatus(id, status, suspensionEndDate = null){
     try{
@@ -88,25 +112,53 @@ export default function ManageResidents(){
         <main>
           <h1 className="page-title">Manage Residents</h1>
 
+          <div className="history-controls">
+            <div className="filter-group">
+              <input
+                className="ui-input"
+                type="search"
+                placeholder="Search by ID, name, or email"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => { if(e.key === 'Enter') handleSearch() }}
+                style={{ minWidth: 220, flex: '1 1 220px' }}
+              />
+              <select
+                className="ui-input"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Statuses</option>
+                {statusOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {error && <div className="field-error">{error}</div>}
 
           {loading ? (
             <div className="empty-state">Loading residents...</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
+            <>
+              {filteredItems.length === 0 ? (
+                <div className="empty-state">No residents match the current search or filter.</div>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
 
-                <tbody>
-                  {items.map(it=>(
+                    <tbody>
+                      {filteredItems.map(it=>(
                     <tr key={it.resident_id}>
                       <td>{it.resident_id}</td>
                       <td>{it.first_name} {it.last_name}</td>
@@ -139,8 +191,10 @@ export default function ManageResidents(){
                   ))}
                 </tbody>
 
-              </table>
-            </div>
+                  </table>
+                </div>
+              )}
+            </>
           )}
 
           {selectedForDelete !== null && (

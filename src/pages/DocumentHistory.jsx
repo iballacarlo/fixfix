@@ -27,14 +27,26 @@ export default function DocumentHistory(){
   const currentUser = authUser || mockApi.getCurrentUser()
   const maxBirthdate = new Date().toISOString().split('T')[0]
 
-  const list = data.filter(item =>
-    (filter === 'All' || String(item.status || '').toLowerCase() === filter.toLowerCase()) &&
-    (q === '' ||
-      String(item.reference_number || item.request_id || item.id || '').toLowerCase().includes(q.toLowerCase()) ||
-      String(item.document_type || '').toLowerCase().includes(q.toLowerCase()) ||
-      String(item.name || item.resident_name || item.resident_id || '').toLowerCase().includes(q.toLowerCase())
-    )
-  )
+  const list = data.filter(item => {
+    const itemStatus = String(item.status || '').toLowerCase()
+    const searchQuery = q.trim().toLowerCase()
+    const matchesFilter = filter === 'All' || itemStatus === filter.toLowerCase()
+
+    if(!matchesFilter) return false
+    if(searchQuery === '') return true
+
+    const reference = String(item.reference_number || item.request_id || item.id || item.numericId || item.ref || '')
+    const type = String(item.document_type || item.type || '')
+    const name = String(item.name || item.resident_name || item.resident_id || item.user?.name || item.user?.full_name || '')
+    const purpose = String(item.purpose || '')
+    const status = String(item.status || '')
+    const address = String(item.address || '')
+    const business = String(item.business_name || '')
+    const notes = String(item.notes || '')
+
+    return [reference, type, name, purpose, status, address, business, notes]
+      .some(field => field.toLowerCase().includes(searchQuery))
+  })
 
   const getOwnerId = (item) => {
     if(!item) return null
@@ -466,10 +478,9 @@ export default function DocumentHistory(){
                         onChange={(e) => handleEditFieldChange('document_type', e.target.value)}
                       >
                         <option value="">Select Document Type</option>
-                        <option value="Birth Certificate">Birth Certificate</option>
                         <option value="Barangay Clearance">Barangay Clearance</option>
-                        <option value="Residency">Residency</option>
-                        <option value="Indigency">Indigency</option>
+                        <option value="Residency">Certificate of Residency</option>
+                        <option value="Indigency">Certificate of Indigency</option>
                       </select>
                     </div>
 

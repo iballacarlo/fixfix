@@ -14,8 +14,7 @@ import {
   FileText,
   Clock,
   BadgeCheck,
-  PackageCheck,
-  Search
+  PackageCheck
 } from 'lucide-react'
 
 export default function AdminDashboard(){
@@ -24,8 +23,6 @@ export default function AdminDashboard(){
   const complaints = mockApi.listComplaints()
   const docs = mockApi.listDocs()
   const users = JSON.parse(localStorage.getItem('mock_users') || '[]')
-
-  const [q,setQ] = useState('')
 
   const totalResidents = users.length
   const totalComplaints = complaints.length
@@ -119,22 +116,6 @@ export default function AdminDashboard(){
             <h1 className="page-title">
               Admin Dashboard
             </h1>
-
-            <div className="dash-search">
-
-              <Search size={18}/>
-
-              <input
-                placeholder="Search complaints, requests, residents..."
-                value={q}
-                onChange={(e)=>setQ(e.target.value)}
-              />
-
-              <button className="dash-search-btn">
-                Search
-              </button>
-
-            </div>
 
           </div>
 
